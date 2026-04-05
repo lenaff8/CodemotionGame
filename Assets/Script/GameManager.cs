@@ -1,0 +1,75 @@
+using UnityEngine;
+using System;
+using TMPro;
+
+public class GameManager : MonoBehaviour
+{
+    public static GameManager Instance;
+
+    private int rounds = 1;
+    
+    public enum StatType
+    {
+        Energy = 0,
+        People = 1,
+        Reputation = 2,
+        Money = 3
+    }
+
+    public int[] stats = new int[4] { 5, 5, 5, 5 };
+
+    public Action onGameOver;
+    [SerializeField] private ChipStack chipStack;
+    [SerializeField] private TextMeshProUGUI scoreText;
+
+    void Awake()
+    {
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
+    }
+
+    public void ApplyScenarioEffects(bool chooseRight)
+    {
+        AIScenario scenario = ScenarioManager.Instance.CurrentScenario;
+        CharacterEffect effect = chooseRight ? scenario.effects.right : scenario.effects.left;
+        // Mapear efectos de IA a stats del juego
+        stats[(int)StatType.Money] += effect.money;
+        stats[(int)StatType.Reputation] += effect.reputation;
+        stats[(int)StatType.People] += effect.people;
+        stats[(int)StatType.Energy] += effect.energy;
+        chipStack.SetScores(stats[(int)StatType.Energy], stats[(int)StatType.People], stats[(int)StatType.Reputation], stats[(int)StatType.Money]);
+        CheckGameOver();
+    }
+
+    private void CompleteRound()
+    {
+        ++rounds;
+        scoreText.text = $"{rounds} days in charge";
+    }
+
+    private void CheckGameOver()
+    {
+        for (int i = 0; i < stats.Length; i++)
+        {
+            if (stats[i] < 0 || stats[i] > 10)
+            {
+                GameOver();
+                return;
+            }
+        }
+        CompleteRound();
+    }
+
+    void GameOver()
+    {
+        onGameOver?.Invoke();
+        Time.timeScale = 0f;
+    }
+}
