@@ -85,6 +85,14 @@ public class AIScenarioGenerator : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+
     public void GenerateScenario(int numScenarios = 1)
     {
         if (isGenerating)
@@ -108,7 +116,7 @@ public class AIScenarioGenerator : MonoBehaviour
             var inputData = new AIGenerationRequest
             {
                 prompt = "start",
-                contextName = "test_context",
+                contextName = "es_context",
                 recentCards = cleanHistory
             };
 
