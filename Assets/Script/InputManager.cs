@@ -12,6 +12,8 @@ public class InputManager : MonoBehaviour, InputSystem_Actions.IPlayerActions, I
     public bool ClickReleased { get; private set; }
     public Vector2 PointerPosition { get; private set; }
 
+    private bool wasPointerDown;
+
     private void Awake()
     {
         // Singleton básico
@@ -47,28 +49,46 @@ public class InputManager : MonoBehaviour, InputSystem_Actions.IPlayerActions, I
         ClickReleased = false;
     }
 
+    private void Update()
+    {
+        bool isPointerDown = false;
+
+        if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
+        {
+            var touch = Touchscreen.current.primaryTouch;
+            PointerPosition = touch.position.ReadValue();
+            isPointerDown = touch.press.isPressed;
+        }
+        else if (Mouse.current != null)
+        {
+            PointerPosition = Mouse.current.position.ReadValue();
+            isPointerDown = Mouse.current.leftButton.isPressed;
+        }
+        else if (Pointer.current != null)
+        {
+            PointerPosition = Pointer.current.position.ReadValue();
+            isPointerDown = Pointer.current.press.isPressed;
+        }
+
+        if (isPointerDown && !wasPointerDown)
+            ClickPressed = true;
+
+        if (!isPointerDown && wasPointerDown)
+            ClickReleased = true;
+
+        wasPointerDown = isPointerDown;
+    }
+
     // =========================
     // CLICK (Mouse + Touch)
     // =========================
 
     public void OnAttack(InputAction.CallbackContext context)
     {
-        // Mouse izquierdo / tap (Player map)
-        if (context.started)
-            ClickPressed = true;
-
-        if (context.canceled)
-            ClickReleased = true;
     }
 
     public void OnClick(InputAction.CallbackContext context)
     {
-        // UI Click (también incluye touch)
-        if (context.started)
-            ClickPressed = true;
-
-        if (context.canceled)
-            ClickReleased = true;
     }
 
     // =========================
@@ -77,7 +97,6 @@ public class InputManager : MonoBehaviour, InputSystem_Actions.IPlayerActions, I
 
     public void OnPoint(InputAction.CallbackContext context)
     {
-        PointerPosition = context.ReadValue<Vector2>();
     }
 
     // =========================

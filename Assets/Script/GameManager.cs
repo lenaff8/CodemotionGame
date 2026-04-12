@@ -35,6 +35,14 @@ public class GameManager : MonoBehaviour
 
     }
 
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+
     public void ApplyScenarioEffects(bool chooseRight)
     {
         AIScenario scenario = ScenarioManager.Instance.CurrentScenario;
