@@ -74,18 +74,80 @@ public class DraggableSprite : MonoBehaviour
     private float snapTimer;
     private float cardTimer;
 
+    [Header("Game Over Card")]
+    [SerializeField] private float gameOverDelay = 3.5f;
+    [SerializeField] private SpriteRenderer cardFaceRenderer; // opcional
+    [SerializeField] private Sprite[] gameOverSprites;        // opcional, 8 sprites: Energy_min/max, People_min/max, Rep_min/max, Money_min/max
+    [SerializeField] private string[] gameOverPhrases = {
+        "Esto...", "Eh...", "Vaya...", "Uf...", "Bueno...",
+        "Hmm...", "Ay...", "Oh...", "Madre mía...", "Ejem...",
+        "Pues...", "Ostras...", "Vamos...", "Buf...", "Anda..."
+    };
+
     private NewCardAnimation newCardAnimation;
     private bool interactable = false;
+    private bool pendingPlay = false;
+    private int gameOverStep = 0; // 0=normal, 1=última carta snap→mostrará game over, 2=carta game over activa
     
     private void Awake()
     {
         cam = Camera.main;
         ScenarioManager.Instance.onScenarioGenerated += StartDelay;
+        GameManager.Instance.onGameOverCard += OnGameOverCard;
+    }
+
+    private void OnDestroy()
+    {
+        if (GameManager.Instance != null)
+            GameManager.Instance.onGameOverCard -= OnGameOverCard;
     }
 
     public void SetInteractable(bool interactable)
     {
-        this.interactable = interactable;        
+        this.interactable = interactable;
+    }
+
+    private void OnGameOverCard(GameManager.StatType stat, bool exceeded)
+    {
+        gameOverStep = 1;
+
+        string sentence = GetGameOverPhrase(stat, exceeded);
+        cardScenario.SetTexts(sentence, GetRandomPhrase(), GetRandomPhrase());
+
+        if (cardFaceRenderer != null && gameOverSprites != null)
+        {
+            int index = (int)stat * 2 + (exceeded ? 1 : 0);
+            if (index < gameOverSprites.Length && gameOverSprites[index] != null)
+                cardFaceRenderer.sprite = gameOverSprites[index];
+        }
+    }
+
+    private string GetGameOverPhrase(GameManager.StatType stat, bool exceeded)
+    {
+        switch (stat)
+        {
+            case GameManager.StatType.Energy:
+                return exceeded ? "El equipo está al límite del estrés. Nadie puede más."
+                                : "Sin energía, el equipo se desmorona.";
+            case GameManager.StatType.People:
+                return exceeded ? "Demasiada gente. El caos se apodera de la empresa."
+                                : "Tu equipo te ha abandonado. Estás solo.";
+            case GameManager.StatType.Reputation:
+                return exceeded ? "Demasiada fama. Los medios destrozan la empresa."
+                                : "Tu reputación está por los suelos. Nadie confía en ti.";
+            case GameManager.StatType.Money:
+                return exceeded ? "Demasiado dinero. Los inversores se lo llevaron todo."
+                                : "La empresa quiebra. No queda ni un euro.";
+            default:
+                return "La empresa no pudo seguir adelante.";
+        }
+    }
+
+    private string GetRandomPhrase()
+    {
+        if (gameOverPhrases == null || gameOverPhrases.Length == 0)
+            return "...";
+        return gameOverPhrases[Random.Range(0, gameOverPhrases.Length)];
     }
 
     private void StartDelay()
@@ -94,7 +156,6 @@ public class DraggableSprite : MonoBehaviour
 
         newCardAnimation = GetComponent<NewCardAnimation>();
         cardScenario = GetComponent<CardScenario>();
-        cardScenario.UpdateScenarioTexts();
 
         originalPosition = transform.position;
         transform.rotation = Quaternion.Euler(0f, 180f, 0f);
@@ -106,13 +167,32 @@ public class DraggableSprite : MonoBehaviour
 
         currentAngle = baseAngle;
         startAngle = baseAngle;
-        
-        newCardAnimation.Play();
-        coverCard.gameObject.SetActive(false);
+
+        if (GameManager.IsPlaying)
+        {
+            cardScenario.UpdateScenarioTexts();
+            newCardAnimation.Play();
+            coverCard.gameObject.SetActive(false);
+        }
+        else
+        {
+            pendingPlay = true;
+        }
     }
 
     private void Update()
     {
+        if (!GameManager.IsPlaying)
+            return;
+
+        if (pendingPlay)
+        {
+            pendingPlay = false;
+            cardScenario.UpdateScenarioTexts();
+            coverCard.gameObject.SetActive(false);
+            newCardAnimation.Play();
+        }
+
         var input = InputManager.Instance;
 
         HandleInput(input);
@@ -175,8 +255,9 @@ public class DraggableSprite : MonoBehaviour
 
                 state = State.Snapping;
                 interactable = false;
-                
-                GameManager.Instance.ApplyScenarioEffects(currentAngle > 0); 
+
+                if (gameOverStep != 2)
+                    GameManager.Instance.ApplyScenarioEffects(currentAngle > 0);
             }
 
             OnDragEnd();
@@ -270,10 +351,27 @@ public class DraggableSprite : MonoBehaviour
 
             ResetVisuals();
 
+            if (gameOverStep == 2)
+            {
+                // Carta game over deslizada → esperar delay y mostrar highscore
+                gameOverStep = 0;
+                state = State.Idle;
+                GameManager.Instance.StartGameOverTimer(gameOverDelay);
+                return;
+            }
+
             state = State.CardWaiting;
             cardTimer = 0f;
-            
-            cardScenario.UpdateNextScenarioTexts();
+
+            if (gameOverStep == 1)
+            {
+                // Última carta regular snapeada → mostrar carta game over (textos ya seteados)
+                gameOverStep = 2;
+            }
+            else
+            {
+                cardScenario.UpdateNextScenarioTexts();
+            }
         }
     }
 
@@ -432,6 +530,28 @@ public class DraggableSprite : MonoBehaviour
             c.a = 0f;
             responseRight.color = c;
         }
+    }
+
+    public void ResetForNewGame()
+    {
+        state = State.Idle;
+        interactable = false;
+        fillAmount = 0f;
+        snapTimer = 0f;
+        cardTimer = 0f;
+        pendingPlay = false;
+        gameOverStep = 0;
+
+        transform.position = originalPosition;
+        transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+
+        if (coverCard != null)
+            coverCard.gameObject.SetActive(false);
+
+        ResetVisuals();
+
+        // Re-suscribir para que StartDelay arranque con el primer escenario nuevo
+        ScenarioManager.Instance.onScenarioGenerated += StartDelay;
     }
 
     private Vector2 ScreenToWorld(Vector2 screenPos)

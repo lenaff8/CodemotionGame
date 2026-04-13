@@ -24,4 +24,18 @@ public class CardScenario : MonoBehaviour
         ScenarioManager.Instance.GetNextScenario();
         UpdateScenarioTexts();
     }
+
+    public void SetTexts(string sentence, string left, string right)
+    {
+        sentenceText.text = sentence;
+        leftResponseText.text = left;
+        rightResponseText.text = right;
+    }
+
+    public void ClearTexts()
+    {
+        sentenceText.text = "";
+        leftResponseText.text = "";
+        rightResponseText.text = "";
+    }
 }

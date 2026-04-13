@@ -87,6 +87,18 @@ public class GameOverScreen : MonoBehaviour
         }
     }
 
+    public void Hide()
+    {
+        playing = false;
+        timer = 0f;
+        canvasGroup.alpha = 0f;
+        canvasGroup.interactable = false;
+        canvasGroup.blocksRaycasts = false;
+
+        if (artwork != null)
+            artwork.localScale = new Vector3(0.8f, 0.8f, 1f);
+    }
+
     public void RetryGame()
     {
         if (restarting)
@@ -98,7 +110,6 @@ public class GameOverScreen : MonoBehaviour
     private IEnumerator RetryGameCoroutine()
     {
         restarting = true;
-        Time.timeScale = 1f;
 
         if (GameManager.Instance != null)
         {
