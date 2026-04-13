@@ -278,6 +278,8 @@ MonoBehaviour:
   audioSource: {fileID: 228300190}
   swipeSound: {fileID: 8300000, guid: 3becec1909f194046945d85ac1077772, type: 3}
   newCardSound: {fileID: 8300000, guid: 6e8772b49f34d402a90016ed445d8a2f, type: 3}
+  backgroundMusic: {fileID: 8300000, guid: b3c073b284151e54bbc036accf0c50cb, type: 3}
+  musicVolume: 0.1
 --- !u!82 &228300190
 AudioSource:
   m_ObjectHideFlags: 0
@@ -291,7 +293,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
-  m_Volume: 0.8
+  m_Volume: 1
   m_Pitch: 1
   Loop: 0
   Mute: 0
