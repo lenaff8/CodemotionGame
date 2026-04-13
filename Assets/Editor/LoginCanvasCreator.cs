@@ -48,6 +48,7 @@ public static class LoginCanvasCreator
 
         var nameLabelGO = CreateLabel("LabelNombre", loginCard.transform, "Nombre", -200f);
         var nameInputGO = CreateInputField("NameInput", loginCard.transform, "Tu nombre...", -260f);
+        nameInputGO.GetComponent<TMP_InputField>().characterLimit = 7;
 
         var emailLabelGO = CreateLabel("LabelEmail", loginCard.transform, "Email", -400f);
         var emailInputGO = CreateInputField("EmailInput", loginCard.transform, "tu@email.com", -460f);
@@ -160,7 +161,7 @@ public static class LoginCanvasCreator
         so.FindProperty("retryButton").objectReferenceValue       = retryBtn;
         so.ApplyModifiedProperties();
 
-        // Conectar botones y toggle
+        // Conectar botones y toggles
         UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
             registerBtn.onClick, lm.OnRegisterPressed);
         UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
@@ -169,6 +170,38 @@ public static class LoginCanvasCreator
             privacyToggle.onValueChanged, lm.OnPrivacyToggleChanged, false);
         UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
             privacyLinkBtn.onClick, lm.OpenPrivacyLink);
+
+        // ── Panel de idioma persistente (siempre visible) ────────────────────
+        var langBtnGO = CreateUIObject("LanguageButton", canvasGO.transform);
+        var langImg = langBtnGO.AddComponent<Image>();
+        langImg.color = new Color(0.1f, 0.1f, 0.12f, 0.85f);
+        var langBtnComp = langBtnGO.AddComponent<Button>();
+        var langColors = ColorBlock.defaultColorBlock;
+        langColors.highlightedColor = new Color(0.25f, 0.25f, 0.3f, 1f);
+        langColors.pressedColor = new Color(0.15f, 0.15f, 0.18f, 1f);
+        langBtnComp.colors = langColors;
+        var langRT = langBtnGO.GetComponent<RectTransform>();
+        langRT.anchorMin = new Vector2(1f, 1f);
+        langRT.anchorMax = new Vector2(1f, 1f);
+        langRT.pivot = new Vector2(1f, 1f);
+        langRT.sizeDelta = new Vector2(110f, 55f);
+        langRT.anchoredPosition = new Vector2(-20f, -20f);
+
+        var langLabelGO = CreateUIObject("Label", langBtnGO.transform);
+        var langLabelTMP = langLabelGO.AddComponent<TextMeshProUGUI>();
+        langLabelTMP.text = "ES";
+        langLabelTMP.fontSize = 36;
+        langLabelTMP.fontStyle = FontStyles.Bold;
+        langLabelTMP.alignment = TextAlignmentOptions.Center;
+        langLabelTMP.color = Color.white;
+        StretchFull(langLabelGO.GetComponent<RectTransform>());
+
+        var langScript = langBtnGO.AddComponent<LanguageButton>();
+        var soLang = new SerializedObject(langScript);
+        soLang.FindProperty("label").objectReferenceValue = langLabelTMP;
+        soLang.ApplyModifiedProperties();
+        UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
+            langBtnComp.onClick, langScript.Toggle);
 
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
             UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections;
 using TMPro;
 
 public class GameManager : MonoBehaviour
@@ -23,6 +24,7 @@ public class GameManager : MonoBehaviour
     public int[] stats = new int[4] { 5, 5, 5, 5 };
 
     public Action onGameOver;
+    public Action<StatType, bool> onGameOverCard;
     [SerializeField] private ChipStack chipStack;
     [SerializeField] private TextMeshProUGUI scoreText;
 
@@ -72,16 +74,22 @@ public class GameManager : MonoBehaviour
         {
             if (stats[i] < 0 || stats[i] > 10)
             {
-                GameOver();
+                onGameOverCard?.Invoke((StatType)i, stats[i] > 10);
                 return;
             }
         }
         CompleteRound();
     }
 
-    void GameOver()
+    public void StartGameOverTimer(float delay)
     {
         IsPlaying = false;
+        StartCoroutine(DelayedGameOver(delay));
+    }
+
+    private IEnumerator DelayedGameOver(float delay)
+    {
+        yield return new WaitForSeconds(delay);
         onGameOver?.Invoke();
     }
 

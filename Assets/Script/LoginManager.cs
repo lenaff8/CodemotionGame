@@ -7,11 +7,28 @@ using System.Text.RegularExpressions;
 using UnityEngine.Networking;
 
 [System.Serializable]
+public class UserRequest
+{
+    public string name;
+    public string email;
+    public int points;
+}
+
+[System.Serializable]
+public class UserResponse
+{
+    public string id;
+    public string name;
+    public string email;
+    public int points;
+}
+
+[System.Serializable]
 public class LeaderboardEntry
 {
-    public string playerName;
+    public string name;
     public string email;
-    public int score;
+    public int points;
 }
 
 [System.Serializable]
@@ -20,18 +37,12 @@ public class LeaderboardWrapper
     public List<LeaderboardEntry> entries;
 }
 
-[System.Serializable]
-public class LeaderboardResponse
-{
-    public bool success;
-    public List<LeaderboardEntry> data;
-}
-
 public class LoginManager : MonoBehaviour
 {
     public static LoginManager Instance;
 
-    private const string API_URL = "https://softwareengineering-gzbrg3f6evdpb5ff.canadacentral-01.azurewebsites.net/api/leaderboard";
+    private const string USERS_URL      = "https://softwareengineering-gzbrg3f6evdpb5ff.canadacentral-01.azurewebsites.net/api/users";
+    private const string LEADERBOARD_URL = "https://softwareengineering-gzbrg3f6evdpb5ff.canadacentral-01.azurewebsites.net/api/leaderboard";
 
     [Header("Panels")]
     [SerializeField] private GameObject loginPanel;
@@ -50,8 +61,16 @@ public class LoginManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI leaderboardText;
     [SerializeField] private Button retryButton;
 
-    public static string PlayerName { get; private set; }
+    public static string PlayerName  { get; private set; }
     public static string PlayerEmail { get; private set; }
+    private static string playerId;
+
+    public static bool IsEnglish { get; private set; } = false;
+
+    public void OnLanguageChanged(bool isEnglish)
+    {
+        IsEnglish = isEnglish;
+    }
 
     void Awake()
     {
@@ -90,7 +109,7 @@ public class LoginManager : MonoBehaviour
 
     public void OnRegisterPressed()
     {
-        string name = nameInput.text.Trim();
+        string name  = nameInput.text.Trim();
         string email = emailInput.text.Trim();
 
         if (!privacyToggle.isOn)
@@ -119,12 +138,12 @@ public class LoginManager : MonoBehaviour
 
     private IEnumerator RegisterCoroutine(string name, string email)
     {
-        var entry = new LeaderboardEntry { playerName = name, email = email, score = 0 };
-        string json = JsonUtility.ToJson(entry);
+        var body = new UserRequest { name = name, email = email, points = 0 };
+        string json = JsonUtility.ToJson(body);
 
-        using (UnityWebRequest req = new UnityWebRequest(API_URL, "POST"))
+        using (UnityWebRequest req = new UnityWebRequest(USERS_URL, "POST"))
         {
-            req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
+            req.uploadHandler   = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
             req.downloadHandler = new DownloadHandlerBuffer();
             req.SetRequestHeader("Content-Type", "application/json");
 
@@ -132,9 +151,11 @@ public class LoginManager : MonoBehaviour
 
             if (req.result == UnityWebRequest.Result.Success)
             {
-                PlayerName = name;
+                var response = JsonUtility.FromJson<UserResponse>(req.downloadHandler.text);
+                PlayerName  = name;
                 PlayerEmail = email;
-                Debug.Log($"Registrado: {name} ({email})");
+                playerId    = response?.id;
+                Debug.Log($"Registrado: {name} ({email}) — id: {playerId}");
                 loginPanel.SetActive(false);
                 GameManager.IsPlaying = true;
             }
@@ -154,6 +175,10 @@ public class LoginManager : MonoBehaviour
         int finalScore = GameManager.Instance != null ? GameManager.Instance.Rounds : 0;
         highscorePanel.SetActive(true);
         loginPanel.SetActive(false);
+
+        var cardScenario = Object.FindFirstObjectByType<CardScenario>();
+        cardScenario?.ClearTexts();
+
         StartCoroutine(SubmitAndFetch(finalScore));
     }
 
@@ -162,22 +187,27 @@ public class LoginManager : MonoBehaviour
         playerScoreText.text = $"Tu puntuación: {score} días";
         leaderboardText.text = "Enviando puntuación...";
 
-        // 1. Enviar score
         yield return StartCoroutine(SubmitScoreCoroutine(score));
 
-        // 2. Mostrar leaderboard
         leaderboardText.text = "Cargando ranking...";
         yield return StartCoroutine(FetchLeaderboardCoroutine());
     }
 
     private IEnumerator SubmitScoreCoroutine(int score)
     {
-        var entry = new LeaderboardEntry { playerName = PlayerName, email = PlayerEmail, score = score };
-        string json = JsonUtility.ToJson(entry);
-
-        using (UnityWebRequest req = new UnityWebRequest(API_URL, "POST"))
+        if (string.IsNullOrEmpty(playerId))
         {
-            req.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
+            Debug.LogWarning("Sin ID de usuario, no se puede enviar score.");
+            yield break;
+        }
+
+        var body = new UserRequest { name = PlayerName, email = PlayerEmail, points = score };
+        string json = JsonUtility.ToJson(body);
+        string url  = $"{USERS_URL}/{playerId}";
+
+        using (UnityWebRequest req = new UnityWebRequest(url, "PUT"))
+        {
+            req.uploadHandler   = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
             req.downloadHandler = new DownloadHandlerBuffer();
             req.SetRequestHeader("Content-Type", "application/json");
 
@@ -186,13 +216,13 @@ public class LoginManager : MonoBehaviour
             if (req.result == UnityWebRequest.Result.Success)
                 Debug.Log($"Score enviado: {score} — {PlayerName}");
             else
-                Debug.LogError($"Error al enviar score: {req.error}");
+                Debug.LogError($"Error al enviar score: {req.error}\n{req.downloadHandler.text}");
         }
     }
 
     private IEnumerator FetchLeaderboardCoroutine()
     {
-        using (UnityWebRequest req = UnityWebRequest.Get(API_URL))
+        using (UnityWebRequest req = UnityWebRequest.Get(LEADERBOARD_URL))
         {
             yield return req.SendWebRequest();
 
@@ -210,14 +240,13 @@ public class LoginManager : MonoBehaviour
                 yield break;
             }
 
-            // Ordenar por score descendente y mostrar top 5
-            entries.Sort((a, b) => b.score.CompareTo(a.score));
-            var sb = new System.Text.StringBuilder();
+            entries.Sort((a, b) => b.points.CompareTo(a.points));
+            var sb  = new System.Text.StringBuilder();
             int top = Mathf.Min(5, entries.Count);
             for (int i = 0; i < top; i++)
             {
                 string medal = i == 0 ? "🥇" : i == 1 ? "🥈" : i == 2 ? "🥉" : $"{i + 1}.";
-                sb.AppendLine($"{medal}  {entries[i].playerName}  —  {entries[i].score} días");
+                sb.AppendLine($"{medal}  {entries[i].name}  —  {entries[i].points} días");
             }
             leaderboardText.text = sb.ToString().TrimEnd();
         }
@@ -227,20 +256,10 @@ public class LoginManager : MonoBehaviour
     {
         try
         {
-            // Intentar como array directo
             string wrapped = "{\"entries\":" + json + "}";
             var wrapper = JsonUtility.FromJson<LeaderboardWrapper>(wrapped);
             if (wrapper?.entries != null && wrapper.entries.Count > 0)
                 return wrapper.entries;
-        }
-        catch { }
-
-        try
-        {
-            // Intentar como { success, data: [...] }
-            var response = JsonUtility.FromJson<LeaderboardResponse>(json);
-            if (response?.data != null && response.data.Count > 0)
-                return response.data;
         }
         catch { }
 
@@ -253,23 +272,19 @@ public class LoginManager : MonoBehaviour
     {
         highscorePanel.SetActive(false);
 
-        // Ocultar GameOverScreen si existe
         var gameOverScreen = Object.FindFirstObjectByType<GameOverScreen>();
         gameOverScreen?.Hide();
 
-        // Resetear juego sin recargar escena
         GameManager.Instance.ResetGame();
         ScenarioManager.Instance.ResetGame();
     }
 
-    // Llamado por el Toggle en el Inspector (OnValueChanged)
     public void OnPrivacyToggleChanged(bool isOn)
     {
         if (isOn)
             privacyLabel.color = new Color(0.8f, 0.8f, 0.8f, 1f);
     }
 
-    // Llamado por el botón-link en el Inspector
     public void OpenPrivacyLink()
     {
         Application.OpenURL("https://www.betterask.erni/es-es/privacy-statement/");
