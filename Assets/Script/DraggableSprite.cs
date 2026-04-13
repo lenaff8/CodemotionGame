@@ -166,6 +166,8 @@ public class DraggableSprite : MonoBehaviour
             }
             else
             {
+                //añadido sonido
+                SoundManager.instance.PlaySwipe();
                 float leftAngle = -25f;
                 float rightAngle = 25f;
 
@@ -176,6 +178,7 @@ public class DraggableSprite : MonoBehaviour
 
                 state = State.Snapping;
                 interactable = false;
+                
                 GameManager.Instance.ApplyScenarioEffects(currentAngle > 0); 
             }
 
@@ -287,6 +290,8 @@ public class DraggableSprite : MonoBehaviour
         if (cardTimer >= cardAnimDelay)
         {
             state = State.Idle;
+            //sonido
+            SoundManager.instance.PlayNewCard();
             newCardAnimation.Play();
         }
     }
