@@ -74,7 +74,7 @@ public class GameManager : MonoBehaviour
         {
             if (stats[i] <= 0 || stats[i] >= 10)
             {
-                onGameOverCard?.Invoke((StatType)i, stats[i] > 10);
+                onGameOverCard?.Invoke((StatType)i, stats[i] >= 10);
                 return;
             }
         }
