@@ -6,7 +6,11 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
+    // true = jugando, false = login o game over
+    public static bool IsPlaying = false;
+
     private int rounds = 1;
+    public int Rounds => rounds;
     
     public enum StatType
     {
@@ -32,7 +36,7 @@ public class GameManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
-
+        IsPlaying = false;
     }
 
     private void OnDestroy()
@@ -77,7 +81,16 @@ public class GameManager : MonoBehaviour
 
     void GameOver()
     {
+        IsPlaying = false;
         onGameOver?.Invoke();
-        Time.timeScale = 0f;
+    }
+
+    public void ResetGame()
+    {
+        stats = new int[4] { 5, 5, 5, 5 };
+        rounds = 1;
+        scoreText.text = "1 days in charge";
+        chipStack.SetScores(5, 5, 5, 5);
+        IsPlaying = true;
     }
 }

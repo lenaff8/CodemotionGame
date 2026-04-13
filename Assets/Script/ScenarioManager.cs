@@ -50,4 +50,11 @@ public class ScenarioManager : MonoBehaviour
         AIScenarioGenerator.Instance.GenerateScenario();
         return generatedScenarios.Dequeue();
     }
+
+    public void ResetGame()
+    {
+        generatedScenarios.Clear();
+        draggableSprite.ResetForNewGame();
+        AIScenarioGenerator.Instance.GenerateScenario(4);
+    }
 }

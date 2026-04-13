@@ -113,6 +113,9 @@ public class DraggableSprite : MonoBehaviour
 
     private void Update()
     {
+        if (!GameManager.IsPlaying)
+            return;
+
         var input = InputManager.Instance;
 
         HandleInput(input);
@@ -427,6 +430,26 @@ public class DraggableSprite : MonoBehaviour
             c.a = 0f;
             responseRight.color = c;
         }
+    }
+
+    public void ResetForNewGame()
+    {
+        state = State.Idle;
+        interactable = false;
+        fillAmount = 0f;
+        snapTimer = 0f;
+        cardTimer = 0f;
+
+        transform.position = originalPosition;
+        transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+
+        if (coverCard != null)
+            coverCard.gameObject.SetActive(false);
+
+        ResetVisuals();
+
+        // Re-suscribir para que StartDelay arranque con el primer escenario nuevo
+        ScenarioManager.Instance.onScenarioGenerated += StartDelay;
     }
 
     private Vector2 ScreenToWorld(Vector2 screenPos)
