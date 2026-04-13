@@ -79,7 +79,7 @@ public static class LoginCanvasCreator
         var highscorePanel = CreatePanel("HighscorePanel", canvasGO.transform, new Color(0f, 0f, 0f, 0.92f));
         highscorePanel.SetActive(false);
 
-        var hsCard = CreateCard("Card", highscorePanel.transform, new Vector2(700f, 1050f));
+        var hsCard = CreateCard("Card", highscorePanel.transform, new Vector2(700f, 1200f));
 
         CreateTitle(hsCard.transform, "Game Over", -60f);
 
@@ -150,7 +150,7 @@ public static class LoginCanvasCreator
         lbLeftRT.anchorMin = new Vector2(0f, 1f);
         lbLeftRT.anchorMax = new Vector2(0f, 1f);
         lbLeftRT.pivot = new Vector2(0f, 1f);
-        lbLeftRT.sizeDelta = new Vector2(230f, 310f);
+        lbLeftRT.sizeDelta = new Vector2(230f, 470f);
         lbLeftRT.anchoredPosition = new Vector2(40f, -410f);
 
         // Columna derecha: nombre
@@ -165,12 +165,12 @@ public static class LoginCanvasCreator
         lbRightRT.anchorMin = new Vector2(0f, 1f);
         lbRightRT.anchorMax = new Vector2(0f, 1f);
         lbRightRT.pivot = new Vector2(0f, 1f);
-        lbRightRT.sizeDelta = new Vector2(400f, 310f);
+        lbRightRT.sizeDelta = new Vector2(400f, 470f);
         lbRightRT.anchoredPosition = new Vector2(280f, -410f);
 
         // Botón Reintentar
         var retryBtn = CreateButton("RetryButton", hsCard.transform, "Jugar de nuevo",
-            new Color(0.2f, 0.75f, 0.4f, 1f), -920f, 100f);
+            new Color(0.2f, 0.75f, 0.4f, 1f), -1080f, 100f);
 
         // ── Conectar LoginManager ────────────────────────────────────────────
         var lmGO = GameObject.Find("LoginManager") ?? new GameObject("LoginManager");

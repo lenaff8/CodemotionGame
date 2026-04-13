@@ -246,7 +246,7 @@ public class LoginManager : MonoBehaviour
         entries.Sort((a, b) => b.points.CompareTo(a.points));
         var sbLeft  = new System.Text.StringBuilder();
         var sbRight = new System.Text.StringBuilder();
-        int top = Mathf.Min(5, entries.Count);
+        int top = Mathf.Min(10, entries.Count);
         for (int i = 0; i < top; i++)
         {
             string medal = i == 0 ? "🥇" : i == 1 ? "🥈" : i == 2 ? "🥉" : $"{i + 1}.";

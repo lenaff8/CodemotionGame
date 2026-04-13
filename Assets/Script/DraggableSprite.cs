@@ -112,7 +112,7 @@ public class DraggableSprite : MonoBehaviour
         gameOverStep = 1;
 
         string sentence = GetGameOverPhrase(stat, exceeded);
-        cardScenario.SetTexts(sentence, "", "");
+        cardScenario.SetTexts(sentence, GetRandomPhrase(), GetRandomPhrase());
 
         if (cardFaceRenderer != null && gameOverSprites != null)
         {
@@ -124,8 +124,29 @@ public class DraggableSprite : MonoBehaviour
 
     private string GetGameOverPhrase(GameManager.StatType stat, bool exceeded)
     {
+        switch (stat)
+        {
+            case GameManager.StatType.Energy:
+                return exceeded ? "El equipo está al límite del estrés. Nadie puede más."
+                                : "Sin energía, el equipo se desmorona.";
+            case GameManager.StatType.People:
+                return exceeded ? "Demasiada gente. El caos se apodera de la empresa."
+                                : "Tu equipo te ha abandonado. Estás solo.";
+            case GameManager.StatType.Reputation:
+                return exceeded ? "Demasiada fama. Los medios destrozan la empresa."
+                                : "Tu reputación está por los suelos. Nadie confía en ti.";
+            case GameManager.StatType.Money:
+                return exceeded ? "Demasiado dinero. Los inversores se lo llevaron todo."
+                                : "La empresa quiebra. No queda ni un euro.";
+            default:
+                return "La empresa no pudo seguir adelante.";
+        }
+    }
+
+    private string GetRandomPhrase()
+    {
         if (gameOverPhrases == null || gameOverPhrases.Length == 0)
-            return "Vaya...";
+            return "...";
         return gameOverPhrases[Random.Range(0, gameOverPhrases.Length)];
     }
 
