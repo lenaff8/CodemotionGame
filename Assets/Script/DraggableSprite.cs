@@ -78,6 +78,11 @@ public class DraggableSprite : MonoBehaviour
     [SerializeField] private float gameOverDelay = 3.5f;
     [SerializeField] private SpriteRenderer cardFaceRenderer; // opcional
     [SerializeField] private Sprite[] gameOverSprites;        // opcional, 8 sprites: Energy_min/max, People_min/max, Rep_min/max, Money_min/max
+    [SerializeField] private string[] gameOverPhrases = {
+        "Esto...", "Eh...", "Vaya...", "Uf...", "Bueno...",
+        "Hmm...", "Ay...", "Oh...", "Madre mía...", "Ejem...",
+        "Pues...", "Ostras...", "Vamos...", "Buf...", "Anda..."
+    };
 
     private NewCardAnimation newCardAnimation;
     private bool interactable = false;
@@ -119,23 +124,9 @@ public class DraggableSprite : MonoBehaviour
 
     private string GetGameOverPhrase(GameManager.StatType stat, bool exceeded)
     {
-        switch (stat)
-        {
-            case GameManager.StatType.Energy:
-                return exceeded ? "El equipo está al límite del estrés. Nadie puede más."
-                                : "Sin energía, el equipo se desmorona.";
-            case GameManager.StatType.People:
-                return exceeded ? "Demasiada gente. El caos se apodera de la empresa."
-                                : "Tu equipo te ha abandonado. Estás solo.";
-            case GameManager.StatType.Reputation:
-                return exceeded ? "Demasiada fama. Los medios destrozan la empresa."
-                                : "Tu reputación está por los suelos. Nadie confía en ti.";
-            case GameManager.StatType.Money:
-                return exceeded ? "Demasiado dinero. Los inversores se lo llevaron todo."
-                                : "La empresa quiebra. No queda ni un euro.";
-            default:
-                return "La empresa no pudo seguir adelante.";
-        }
+        if (gameOverPhrases == null || gameOverPhrases.Length == 0)
+            return "Vaya...";
+        return gameOverPhrases[Random.Range(0, gameOverPhrases.Length)];
     }
 
     private void StartDelay()

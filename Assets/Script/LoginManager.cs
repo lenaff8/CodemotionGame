@@ -58,7 +58,9 @@ public class LoginManager : MonoBehaviour
 
     [Header("Highscore")]
     [SerializeField] private TextMeshProUGUI playerScoreText;
-    [SerializeField] private TextMeshProUGUI leaderboardText;
+    [SerializeField] private TextMeshProUGUI leaderboardStatus;
+    [SerializeField] private TextMeshProUGUI leaderboardLeft;
+    [SerializeField] private TextMeshProUGUI leaderboardRight;
     [SerializeField] private Button retryButton;
 
     public static string PlayerName  { get; private set; }
@@ -177,11 +179,13 @@ public class LoginManager : MonoBehaviour
     private IEnumerator SubmitAndFetch(int score)
     {
         playerScoreText.text = $"Tu puntuación: {score} días";
-        leaderboardText.text = "Enviando puntuación...";
+        leaderboardStatus.text = "Enviando puntuación...";
+        leaderboardLeft.text  = "";
+        leaderboardRight.text = "";
 
         yield return StartCoroutine(SubmitScoreCoroutine(score));
 
-        leaderboardText.text = "Cargando ranking...";
+        leaderboardStatus.text = "Cargando ranking...";
         yield return StartCoroutine(FetchLeaderboardCoroutine());
     }
 
@@ -220,7 +224,7 @@ public class LoginManager : MonoBehaviour
 
             if (req.result != UnityWebRequest.Result.Success)
             {
-                leaderboardText.text = "No se pudo cargar el ranking.";
+                leaderboardStatus.text = "No se pudo cargar el ranking.";
                 yield break;
             }
 
@@ -228,20 +232,29 @@ public class LoginManager : MonoBehaviour
 
             if (entries == null || entries.Count == 0)
             {
-                leaderboardText.text = "Sin datos en el ranking.";
+                leaderboardStatus.text = "Sin datos en el ranking.";
                 yield break;
             }
 
-            entries.Sort((a, b) => b.points.CompareTo(a.points));
-            var sb  = new System.Text.StringBuilder();
-            int top = Mathf.Min(5, entries.Count);
-            for (int i = 0; i < top; i++)
-            {
-                string medal = i == 0 ? "🥇" : i == 1 ? "🥈" : i == 2 ? "🥉" : $"{i + 1}.";
-                sb.AppendLine($"{medal}  {entries[i].name}  —  {entries[i].points} días");
-            }
-            leaderboardText.text = sb.ToString().TrimEnd();
+            leaderboardStatus.text = "";
+            RenderLeaderboard(entries);
         }
+    }
+
+    private void RenderLeaderboard(List<LeaderboardEntry> entries)
+    {
+        entries.Sort((a, b) => b.points.CompareTo(a.points));
+        var sbLeft  = new System.Text.StringBuilder();
+        var sbRight = new System.Text.StringBuilder();
+        int top = Mathf.Min(5, entries.Count);
+        for (int i = 0; i < top; i++)
+        {
+            string medal = i == 0 ? "🥇" : i == 1 ? "🥈" : i == 2 ? "🥉" : $"{i + 1}.";
+            sbLeft.AppendLine($"{medal}  {entries[i].points} días");
+            sbRight.AppendLine(entries[i].name);
+        }
+        leaderboardLeft.text  = sbLeft.ToString().TrimEnd();
+        leaderboardRight.text = sbRight.ToString().TrimEnd();
     }
 
     private List<LeaderboardEntry> ParseLeaderboard(string json)

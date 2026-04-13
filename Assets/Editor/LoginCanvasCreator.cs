@@ -79,7 +79,7 @@ public static class LoginCanvasCreator
         var highscorePanel = CreatePanel("HighscorePanel", canvasGO.transform, new Color(0f, 0f, 0f, 0.92f));
         highscorePanel.SetActive(false);
 
-        var hsCard = CreateCard("Card", highscorePanel.transform, new Vector2(700f, 900f));
+        var hsCard = CreateCard("Card", highscorePanel.transform, new Vector2(700f, 1050f));
 
         CreateTitle(hsCard.transform, "Game Over", -60f);
 
@@ -124,24 +124,53 @@ public static class LoginCanvasCreator
         rtRT.sizeDelta = new Vector2(620f, 50f);
         rtRT.anchoredPosition = new Vector2(0f, -275f);
 
-        // Lista leaderboard
-        var lbGO = CreateUIObject("LeaderboardText", hsCard.transform);
-        var lbTMP = lbGO.AddComponent<TextMeshProUGUI>();
-        lbTMP.text = "Cargando...";
-        lbTMP.fontSize = 38;
-        lbTMP.alignment = TextAlignmentOptions.Center;
-        lbTMP.color = Color.white;
-        lbTMP.lineSpacing = 10f;
-        var lbRT = lbGO.GetComponent<RectTransform>();
-        lbRT.anchorMin = new Vector2(0.5f, 1f);
-        lbRT.anchorMax = new Vector2(0.5f, 1f);
-        lbRT.pivot = new Vector2(0.5f, 1f);
-        lbRT.sizeDelta = new Vector2(640f, 350f);
-        lbRT.anchoredPosition = new Vector2(0f, -340f);
+        // Texto de estado (Cargando... / errores) — centrado, encima de las columnas
+        var lbStatusGO = CreateUIObject("LeaderboardStatus", hsCard.transform);
+        var lbStatusTMP = lbStatusGO.AddComponent<TextMeshProUGUI>();
+        lbStatusTMP.text = "Cargando...";
+        lbStatusTMP.fontSize = 34;
+        lbStatusTMP.alignment = TextAlignmentOptions.Center;
+        lbStatusTMP.color = new Color(0.7f, 0.7f, 0.7f, 1f);
+        var lbStatusRT = lbStatusGO.GetComponent<RectTransform>();
+        lbStatusRT.anchorMin = new Vector2(0.5f, 1f);
+        lbStatusRT.anchorMax = new Vector2(0.5f, 1f);
+        lbStatusRT.pivot = new Vector2(0.5f, 1f);
+        lbStatusRT.sizeDelta = new Vector2(600f, 50f);
+        lbStatusRT.anchoredPosition = new Vector2(0f, -345f);
+
+        // Columna izquierda: puntuación (con medalla)
+        var lbLeftGO = CreateUIObject("LeaderboardLeft", hsCard.transform);
+        var lbLeftTMP = lbLeftGO.AddComponent<TextMeshProUGUI>();
+        lbLeftTMP.text = "";
+        lbLeftTMP.fontSize = 34;
+        lbLeftTMP.alignment = TextAlignmentOptions.TopLeft;
+        lbLeftTMP.color = Color.white;
+        lbLeftTMP.lineSpacing = 12f;
+        var lbLeftRT = lbLeftGO.GetComponent<RectTransform>();
+        lbLeftRT.anchorMin = new Vector2(0f, 1f);
+        lbLeftRT.anchorMax = new Vector2(0f, 1f);
+        lbLeftRT.pivot = new Vector2(0f, 1f);
+        lbLeftRT.sizeDelta = new Vector2(230f, 310f);
+        lbLeftRT.anchoredPosition = new Vector2(40f, -410f);
+
+        // Columna derecha: nombre
+        var lbRightGO = CreateUIObject("LeaderboardRight", hsCard.transform);
+        var lbRightTMP = lbRightGO.AddComponent<TextMeshProUGUI>();
+        lbRightTMP.text = "";
+        lbRightTMP.fontSize = 34;
+        lbRightTMP.alignment = TextAlignmentOptions.TopLeft;
+        lbRightTMP.color = Color.white;
+        lbRightTMP.lineSpacing = 12f;
+        var lbRightRT = lbRightGO.GetComponent<RectTransform>();
+        lbRightRT.anchorMin = new Vector2(0f, 1f);
+        lbRightRT.anchorMax = new Vector2(0f, 1f);
+        lbRightRT.pivot = new Vector2(0f, 1f);
+        lbRightRT.sizeDelta = new Vector2(400f, 310f);
+        lbRightRT.anchoredPosition = new Vector2(280f, -410f);
 
         // Botón Reintentar
         var retryBtn = CreateButton("RetryButton", hsCard.transform, "Jugar de nuevo",
-            new Color(0.2f, 0.75f, 0.4f, 1f), -790f, 100f);
+            new Color(0.2f, 0.75f, 0.4f, 1f), -920f, 100f);
 
         // ── Conectar LoginManager ────────────────────────────────────────────
         var lmGO = GameObject.Find("LoginManager") ?? new GameObject("LoginManager");
@@ -156,8 +185,10 @@ public static class LoginCanvasCreator
         so.FindProperty("privacyLabel").objectReferenceValue      = privacyLabelTMP;
         so.FindProperty("registerButton").objectReferenceValue    = registerBtn;
         so.FindProperty("feedbackText").objectReferenceValue      = feedbackTMP;
-        so.FindProperty("playerScoreText").objectReferenceValue   = playerScoreTMP;
-        so.FindProperty("leaderboardText").objectReferenceValue   = lbTMP;
+        so.FindProperty("playerScoreText").objectReferenceValue    = playerScoreTMP;
+        so.FindProperty("leaderboardStatus").objectReferenceValue = lbStatusTMP;
+        so.FindProperty("leaderboardLeft").objectReferenceValue   = lbLeftTMP;
+        so.FindProperty("leaderboardRight").objectReferenceValue  = lbRightTMP;
         so.FindProperty("retryButton").objectReferenceValue       = retryBtn;
         so.ApplyModifiedProperties();
 
