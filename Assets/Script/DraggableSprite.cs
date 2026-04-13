@@ -119,35 +119,22 @@ public class DraggableSprite : MonoBehaviour
 
     private string GetGameOverPhrase(GameManager.StatType stat, bool exceeded)
     {
-        bool en = LoginManager.IsEnglish;
         switch (stat)
         {
             case GameManager.StatType.Energy:
-                return exceeded
-                    ? (en ? "The team is completely burned out. Nobody can keep going."
-                          : "El equipo está al límite del estrés. Nadie puede más.")
-                    : (en ? "The team ran out of energy. Everything falls apart."
-                          : "Sin energía, el equipo se desmorona.");
+                return exceeded ? "El equipo está al límite del estrés. Nadie puede más."
+                                : "Sin energía, el equipo se desmorona.";
             case GameManager.StatType.People:
-                return exceeded
-                    ? (en ? "Too many people. Chaos takes over the company."
-                          : "Demasiada gente. El caos se apodera de la empresa.")
-                    : (en ? "Your team has abandoned you. You're alone."
-                          : "Tu equipo te ha abandonado. Estás solo.");
+                return exceeded ? "Demasiada gente. El caos se apodera de la empresa."
+                                : "Tu equipo te ha abandonado. Estás solo.";
             case GameManager.StatType.Reputation:
-                return exceeded
-                    ? (en ? "Too much fame. The media destroys the company."
-                          : "Demasiada fama. Los medios destrozan la empresa.")
-                    : (en ? "Your reputation is in ruins. Nobody trusts you."
-                          : "Tu reputación está por los suelos. Nadie confía en ti.");
+                return exceeded ? "Demasiada fama. Los medios destrozan la empresa."
+                                : "Tu reputación está por los suelos. Nadie confía en ti.";
             case GameManager.StatType.Money:
-                return exceeded
-                    ? (en ? "Too much money. The investors took it all."
-                          : "Demasiado dinero. Los inversores se lo llevaron todo.")
-                    : (en ? "The company goes bankrupt. Not a single cent left."
-                          : "La empresa quiebra. No queda ni un euro.");
+                return exceeded ? "Demasiado dinero. Los inversores se lo llevaron todo."
+                                : "La empresa quiebra. No queda ni un euro.";
             default:
-                return en ? "The company could not carry on." : "La empresa no pudo seguir adelante.";
+                return "La empresa no pudo seguir adelante.";
         }
     }
 
@@ -157,7 +144,6 @@ public class DraggableSprite : MonoBehaviour
 
         newCardAnimation = GetComponent<NewCardAnimation>();
         cardScenario = GetComponent<CardScenario>();
-        cardScenario.UpdateScenarioTexts();
 
         originalPosition = transform.position;
         transform.rotation = Quaternion.Euler(0f, 180f, 0f);
@@ -172,6 +158,7 @@ public class DraggableSprite : MonoBehaviour
 
         if (GameManager.IsPlaying)
         {
+            cardScenario.UpdateScenarioTexts();
             newCardAnimation.Play();
             coverCard.gameObject.SetActive(false);
         }
@@ -189,6 +176,7 @@ public class DraggableSprite : MonoBehaviour
         if (pendingPlay)
         {
             pendingPlay = false;
+            cardScenario.UpdateScenarioTexts();
             coverCard.gameObject.SetActive(false);
             newCardAnimation.Play();
         }

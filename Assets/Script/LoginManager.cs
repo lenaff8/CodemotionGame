@@ -41,7 +41,7 @@ public class LoginManager : MonoBehaviour
 {
     public static LoginManager Instance;
 
-    private const string USERS_URL      = "https://softwareengineering-gzbrg3f6evdpb5ff.canadacentral-01.azurewebsites.net/api/users";
+    private const string USERS_URL       = "https://softwareengineering-gzbrg3f6evdpb5ff.canadacentral-01.azurewebsites.net/api/users";
     private const string LEADERBOARD_URL = "https://softwareengineering-gzbrg3f6evdpb5ff.canadacentral-01.azurewebsites.net/api/leaderboard";
 
     [Header("Panels")]
@@ -65,13 +65,6 @@ public class LoginManager : MonoBehaviour
     public static string PlayerEmail { get; private set; }
     private static string playerId;
 
-    public static bool IsEnglish { get; private set; } = false;
-
-    public void OnLanguageChanged(bool isEnglish)
-    {
-        IsEnglish = isEnglish;
-    }
-
     void Awake()
     {
         if (Instance != null) { Destroy(gameObject); return; }
@@ -85,7 +78,6 @@ public class LoginManager : MonoBehaviour
 
         GameManager.Instance.onGameOver += OnGameOver;
 
-        // Retry: ya registrado, saltar login
         if (!string.IsNullOrEmpty(PlayerName))
         {
             loginPanel.SetActive(false);
