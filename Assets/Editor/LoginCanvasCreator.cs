@@ -82,7 +82,7 @@ public static class LoginCanvasCreator
 
         CreateTitle(hsCard.transform, "Game Over", -60f);
 
-        // Puntuación del jugador
+        // Puntuación de esta partida
         var playerScoreGO = CreateUIObject("PlayerScoreText", hsCard.transform);
         var playerScoreTMP = playerScoreGO.AddComponent<TextMeshProUGUI>();
         playerScoreTMP.text = "Tu puntuación: 0 días";
@@ -97,6 +97,20 @@ public static class LoginCanvasCreator
         psRT.sizeDelta = new Vector2(620f, 60f);
         psRT.anchoredPosition = new Vector2(0f, -170f);
 
+        // Mejor puntuación personal
+        var playerBestGO = CreateUIObject("PlayerBestText", hsCard.transform);
+        var playerBestTMP = playerBestGO.AddComponent<TextMeshProUGUI>();
+        playerBestTMP.text = "";
+        playerBestTMP.fontSize = 36;
+        playerBestTMP.alignment = TextAlignmentOptions.Center;
+        playerBestTMP.color = new Color(0.4f, 0.9f, 0.6f, 1f);
+        var pbRT = playerBestGO.GetComponent<RectTransform>();
+        pbRT.anchorMin = new Vector2(0.5f, 1f);
+        pbRT.anchorMax = new Vector2(0.5f, 1f);
+        pbRT.pivot = new Vector2(0.5f, 1f);
+        pbRT.sizeDelta = new Vector2(620f, 50f);
+        pbRT.anchoredPosition = new Vector2(0f, -235f);
+
         // Separador
         var sepGO = CreateUIObject("Separator", hsCard.transform);
         var sepImg = sepGO.AddComponent<Image>();
@@ -106,7 +120,7 @@ public static class LoginCanvasCreator
         sepRT.anchorMax = new Vector2(0.5f, 1f);
         sepRT.pivot = new Vector2(0.5f, 1f);
         sepRT.sizeDelta = new Vector2(580f, 2f);
-        sepRT.anchoredPosition = new Vector2(0f, -250f);
+        sepRT.anchoredPosition = new Vector2(0f, -300f);
 
         // Título ranking
         var rankTitleGO = CreateUIObject("RankingTitle", hsCard.transform);
@@ -121,7 +135,7 @@ public static class LoginCanvasCreator
         rtRT.anchorMax = new Vector2(0.5f, 1f);
         rtRT.pivot = new Vector2(0.5f, 1f);
         rtRT.sizeDelta = new Vector2(620f, 50f);
-        rtRT.anchoredPosition = new Vector2(0f, -275f);
+        rtRT.anchoredPosition = new Vector2(0f, -325f);
 
         // Texto de estado (Cargando... / errores) — centrado, encima de las columnas
         var lbStatusGO = CreateUIObject("LeaderboardStatus", hsCard.transform);
@@ -135,7 +149,7 @@ public static class LoginCanvasCreator
         lbStatusRT.anchorMax = new Vector2(0.5f, 1f);
         lbStatusRT.pivot = new Vector2(0.5f, 1f);
         lbStatusRT.sizeDelta = new Vector2(600f, 50f);
-        lbStatusRT.anchoredPosition = new Vector2(0f, -345f);
+        lbStatusRT.anchoredPosition = new Vector2(0f, -395f);
 
         // Columna izquierda: puntuación (con medalla)
         var lbLeftGO = CreateUIObject("LeaderboardLeft", hsCard.transform);
@@ -150,7 +164,7 @@ public static class LoginCanvasCreator
         lbLeftRT.anchorMax = new Vector2(0f, 1f);
         lbLeftRT.pivot = new Vector2(0f, 1f);
         lbLeftRT.sizeDelta = new Vector2(230f, 470f);
-        lbLeftRT.anchoredPosition = new Vector2(40f, -410f);
+        lbLeftRT.anchoredPosition = new Vector2(40f, -460f);
 
         // Columna derecha: nombre
         var lbRightGO = CreateUIObject("LeaderboardRight", hsCard.transform);
@@ -165,7 +179,7 @@ public static class LoginCanvasCreator
         lbRightRT.anchorMax = new Vector2(0f, 1f);
         lbRightRT.pivot = new Vector2(0f, 1f);
         lbRightRT.sizeDelta = new Vector2(400f, 470f);
-        lbRightRT.anchoredPosition = new Vector2(280f, -410f);
+        lbRightRT.anchoredPosition = new Vector2(280f, -460f);
 
         // Botón Reintentar
         var retryBtn = CreateButton("RetryButton", hsCard.transform, "Jugar de nuevo",
@@ -311,6 +325,7 @@ public static class LoginCanvasCreator
         so.FindProperty("registerButton").objectReferenceValue    = registerBtn;
         so.FindProperty("feedbackText").objectReferenceValue      = feedbackTMP;
         so.FindProperty("playerScoreText").objectReferenceValue    = playerScoreTMP;
+        so.FindProperty("playerBestText").objectReferenceValue    = playerBestTMP;
         so.FindProperty("leaderboardStatus").objectReferenceValue = lbStatusTMP;
         so.FindProperty("leaderboardLeft").objectReferenceValue   = lbLeftTMP;
         so.FindProperty("leaderboardRight").objectReferenceValue  = lbRightTMP;
