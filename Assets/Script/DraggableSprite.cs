@@ -105,12 +105,16 @@ public class DraggableSprite : MonoBehaviour
         cam = Camera.main;
         ScenarioManager.Instance.onScenarioGenerated += StartDelay;
         GameManager.Instance.onGameOverCard += OnGameOverCard;
+        GameManager.Instance.onGameOver += OnGameOver;
     }
 
     private void OnDestroy()
     {
         if (GameManager.Instance != null)
+        {
             GameManager.Instance.onGameOverCard -= OnGameOverCard;
+            GameManager.Instance.onGameOver -= OnGameOver;
+        }
     }
 
     public void SetInteractable(bool interactable)
@@ -131,6 +135,12 @@ public class DraggableSprite : MonoBehaviour
             if (index < gameOverSprites.Length && gameOverSprites[index] != null)
                 cardFaceRenderer.sprite = gameOverSprites[index];
         }
+    }
+
+    private void OnGameOver()
+    {
+        if (coverCard != null)
+            coverCard.gameObject.SetActive(true);
     }
 
     private string GetGameOverPhrase(GameManager.StatType stat, bool exceeded)
@@ -618,7 +628,7 @@ public class DraggableSprite : MonoBehaviour
         transform.rotation = Quaternion.Euler(0f, 180f, 0f);
 
         if (coverCard != null)
-            coverCard.gameObject.SetActive(false);
+            coverCard.gameObject.SetActive(true);
 
         ResetVisuals();
 
