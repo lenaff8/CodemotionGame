@@ -1,12 +1,17 @@
 using UnityEngine;
 using System;
+using System.Collections;
 using TMPro;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
+    // true = jugando, false = login o game over
+    public static bool IsPlaying = false;
+
     private int rounds = 1;
+    public int Rounds => rounds;
     
     public enum StatType
     {
@@ -19,6 +24,7 @@ public class GameManager : MonoBehaviour
     public int[] stats = new int[4] { 5, 5, 5, 5 };
 
     public Action onGameOver;
+    public Action<StatType, bool> onGameOverCard;
     [SerializeField] private ChipStack chipStack;
     [SerializeField] private TextMeshProUGUI scoreText;
 
@@ -32,7 +38,7 @@ public class GameManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
-
+        IsPlaying = false;
     }
 
     private void OnDestroy()
@@ -66,18 +72,33 @@ public class GameManager : MonoBehaviour
     {
         for (int i = 0; i < stats.Length; i++)
         {
-            if (stats[i] < 0 || stats[i] > 10)
+            if (stats[i] <= 0 || stats[i] >= 10)
             {
-                GameOver();
+                onGameOverCard?.Invoke((StatType)i, stats[i] >= 10);
                 return;
             }
         }
         CompleteRound();
     }
 
-    void GameOver()
+    public void StartGameOverTimer(float delay)
     {
+        IsPlaying = false;
+        StartCoroutine(DelayedGameOver(delay));
+    }
+
+    private IEnumerator DelayedGameOver(float delay)
+    {
+        yield return new WaitForSeconds(delay);
         onGameOver?.Invoke();
-        Time.timeScale = 0f;
+    }
+
+    public void ResetGame()
+    {
+        stats = new int[4] { 5, 5, 5, 5 };
+        rounds = 1;
+        scoreText.text = "1 days in charge";
+        chipStack.SetScores(5, 5, 5, 5);
+        IsPlaying = true;
     }
 }
