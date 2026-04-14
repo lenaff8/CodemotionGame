@@ -63,6 +63,8 @@ public class LoginManager : MonoBehaviour
     [SerializeField] private TMP_InputField emailInput;
     [SerializeField] private UnityEngine.UI.Toggle privacyToggle;
     [SerializeField] private TextMeshProUGUI privacyLabel;
+    [SerializeField] private UnityEngine.UI.Toggle gameRulesToggle;
+    [SerializeField] private TextMeshProUGUI gameRulesLabel;
     [SerializeField] private Button registerButton;
     [SerializeField] private TextMeshProUGUI feedbackText;
 
@@ -129,6 +131,13 @@ public class LoginManager : MonoBehaviour
         {
             feedbackText.text = "Debes aceptar la política de privacidad.";
             privacyLabel.color = new Color(1f, 0.3f, 0.3f, 1f);
+            return;
+        }
+
+        if (!gameRulesToggle.isOn)
+        {
+            feedbackText.text = "Debes aceptar las bases del juego.";
+            gameRulesLabel.color = new Color(1f, 0.3f, 0.3f, 1f);
             return;
         }
 
@@ -366,9 +375,20 @@ public class LoginManager : MonoBehaviour
             privacyLabel.color = new Color(0.8f, 0.8f, 0.8f, 1f);
     }
 
+    public void OnGameRulesToggleChanged(bool isOn)
+    {
+        if (isOn)
+            gameRulesLabel.color = new Color(0.8f, 0.8f, 0.8f, 1f);
+    }
+
     public void OpenPrivacyLink()
     {
         Application.OpenURL("https://www.betterask.erni/es-es/privacy-statement/");
+    }
+
+    public void OpenGameRulesLink()
+    {
+        Application.OpenURL("https://erni-raffle.vercel.app/");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

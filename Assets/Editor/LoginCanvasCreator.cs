@@ -46,7 +46,7 @@ public static class LoginCanvasCreator
         // ════════════════════════════════════════════════════════════════════
         var loginPanel = CreatePanel("LoginPanel", canvasGO.transform, new Color(0f, 0f, 0f, 0.85f));
 
-        var loginCard = CreateCard("Card", loginPanel.transform, new Vector2(700f, 900f));
+        var loginCard = CreateCard("Card", loginPanel.transform, new Vector2(700f, 1030f));
 
         CreateTitle(loginCard.transform, "Registro", -60f);
 
@@ -57,11 +57,20 @@ public static class LoginCanvasCreator
         var emailLabelGO = CreateLabel("LabelEmail", loginCard.transform, "Email", -400f);
         var emailInputGO = CreateInputField("EmailInput", loginCard.transform, "tu@email.com", -460f);
 
-        // ── Fila de privacidad: Toggle + label + link ────────────────────────
-        var (privacyToggle, privacyLabelTMP, privacyLinkBtn) = CreatePrivacyRow(loginCard.transform, -610f);
+        // ── Fila de privacidad ───────────────────────────────────────────────
+        var (privacyToggle, privacyLabelTMP, privacyLinkBtn) = CreateCheckboxRow(
+            "PrivacyRow", loginCard.transform,
+            "He leído y acepto la", "política de privacidad",
+            -610f);
+
+        // ── Fila de bases del juego ──────────────────────────────────────────
+        var (gameRulesToggle, gameRulesLabelTMP, gameRulesLinkBtn) = CreateCheckboxRow(
+            "GameRulesRow", loginCard.transform,
+            "He leído y acepto las", "bases del juego",
+            -715f);
 
         var registerBtn = CreateButton("RegisterButton", loginCard.transform, "Empezar a jugar",
-            new Color(0.2f, 0.6f, 1f, 1f), -720f, 100f);
+            new Color(0.2f, 0.6f, 1f, 1f), -835f, 100f);
 
         var feedbackGO = CreateUIObject("FeedbackText", loginCard.transform);
         var feedbackTMP = feedbackGO.AddComponent<TextMeshProUGUI>();
@@ -326,6 +335,8 @@ public static class LoginCanvasCreator
         so.FindProperty("emailInput").objectReferenceValue        = emailInputGO.GetComponent<TMP_InputField>();
         so.FindProperty("privacyToggle").objectReferenceValue     = privacyToggle;
         so.FindProperty("privacyLabel").objectReferenceValue      = privacyLabelTMP;
+        so.FindProperty("gameRulesToggle").objectReferenceValue   = gameRulesToggle;
+        so.FindProperty("gameRulesLabel").objectReferenceValue    = gameRulesLabelTMP;
         so.FindProperty("registerButton").objectReferenceValue    = registerBtn;
         so.FindProperty("feedbackText").objectReferenceValue      = feedbackTMP;
         so.FindProperty("playerScoreText").objectReferenceValue    = playerScoreTMP;
@@ -354,6 +365,10 @@ public static class LoginCanvasCreator
             privacyToggle.onValueChanged, lm.OnPrivacyToggleChanged, false);
         UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
             privacyLinkBtn.onClick, lm.OpenPrivacyLink);
+        UnityEditor.Events.UnityEventTools.AddBoolPersistentListener(
+            gameRulesToggle.onValueChanged, lm.OnGameRulesToggleChanged, false);
+        UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
+            gameRulesLinkBtn.onClick, lm.OpenGameRulesLink);
         UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
             okBtn.onClick, tm.OnOkPressed);
 
@@ -488,10 +503,11 @@ public static class LoginCanvasCreator
         return go;
     }
 
-    private static (Toggle toggle, TextMeshProUGUI label, Button linkButton) CreatePrivacyRow(Transform parent, float yPos)
+    private static (Toggle toggle, TextMeshProUGUI label, Button linkButton) CreateCheckboxRow(
+        string rowName, Transform parent, string labelText, string linkText, float yPos)
     {
         // Contenedor de la fila
-        var rowGO = CreateUIObject("PrivacyRow", parent);
+        var rowGO = CreateUIObject(rowName, parent);
         var rowRT = rowGO.GetComponent<RectTransform>();
         rowRT.anchorMin = new Vector2(0.5f, 1f);
         rowRT.anchorMax = new Vector2(0.5f, 1f);
@@ -533,10 +549,10 @@ public static class LoginCanvasCreator
         toggle.graphic = checkImg;
         toggle.isOn = false;
 
-        // ── Texto "He leído y acepto la" ─────────────────────────────────────
+        // ── Texto label ──────────────────────────────────────────────────────
         var labelGO = CreateUIObject("Label", rowGO.transform);
         var labelTMP = labelGO.AddComponent<TextMeshProUGUI>();
-        labelTMP.text = "He leído y acepto la";
+        labelTMP.text = labelText;
         labelTMP.fontSize = 33;
         labelTMP.color = new Color(0.8f, 0.8f, 0.8f, 1f);
         labelTMP.alignment = TextAlignmentOptions.MidlineLeft;
@@ -547,7 +563,7 @@ public static class LoginCanvasCreator
         labelRT.sizeDelta = new Vector2(350f, 0f);
         labelRT.anchoredPosition = new Vector2(70f, 0f);
 
-        // ── Botón-link "política de privacidad" ──────────────────────────────
+        // ── Botón-link ───────────────────────────────────────────────────────
         var linkGO = CreateUIObject("PrivacyLink", rowGO.transform);
         var linkImg = linkGO.AddComponent<Image>();
         linkImg.color = Color.clear;
@@ -567,7 +583,7 @@ public static class LoginCanvasCreator
 
         var linkTxtGO = CreateUIObject("Text", linkGO.transform);
         var linkTMP = linkTxtGO.AddComponent<TextMeshProUGUI>();
-        linkTMP.text = "<u>política de privacidad</u>";
+        linkTMP.text = $"<u>{linkText}</u>";
         linkTMP.fontSize = 33;
         linkTMP.color = new Color(0.4f, 0.75f, 1f, 1f);
         linkTMP.alignment = TextAlignmentOptions.MidlineLeft;
