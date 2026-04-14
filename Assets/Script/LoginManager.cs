@@ -252,7 +252,7 @@ public class LoginManager : MonoBehaviour
         int top = Mathf.Min(10, entries.Count);
         for (int i = 0; i < top; i++)
         {
-            string medal = i == 0 ? "🥇" : i == 1 ? "🥈" : i == 2 ? "🥉" : $"{i + 1}.";
+            string medal = $"{i + 1}.";
             sbLeft.AppendLine($"{medal}  {entries[i].points} días");
             sbRight.AppendLine(entries[i].name);
         }
