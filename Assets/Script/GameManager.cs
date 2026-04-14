@@ -65,7 +65,7 @@ public class GameManager : MonoBehaviour
     private void CompleteRound()
     {
         ++rounds;
-        scoreText.text = $"{rounds} days in charge";
+        scoreText.text = $"{rounds} días al cargo";
     }
 
     private void CheckGameOver()
@@ -97,7 +97,7 @@ public class GameManager : MonoBehaviour
     {
         stats = new int[4] { 5, 5, 5, 5 };
         rounds = 1;
-        scoreText.text = "1 days in charge";
+        scoreText.text = "1 día al cargo";
         chipStack.SetScores(5, 5, 5, 5);
         IsPlaying = true;
     }

@@ -48,6 +48,8 @@ public class DraggableSprite : MonoBehaviour
 
     private CardScenario cardScenario;
     
+    [SerializeField] private RandomCharacter randomCharacter;
+    
     private enum State
     {
         Idle,
@@ -84,10 +86,19 @@ public class DraggableSprite : MonoBehaviour
         "Pues...", "Ostras...", "Vamos...", "Buf...", "Anda..."
     };
 
+    [Header("Stat Indicators")]
+    [SerializeField] private GameObject energyIndicator;
+    [SerializeField] private GameObject peopleIndicator;
+    [SerializeField] private GameObject reputationIndicator;
+    [SerializeField] private GameObject moneyIndicator;
+
     private NewCardAnimation newCardAnimation;
     private bool interactable = false;
     private bool pendingPlay = false;
     private int gameOverStep = 0; // 0=normal, 1=última carta snap→mostrará game over, 2=carta game over activa
+
+    private bool previousPassedThreshold = false;
+    private bool previousIsRight = false;
     
     private void Awake()
     {
@@ -171,6 +182,7 @@ public class DraggableSprite : MonoBehaviour
         if (GameManager.IsPlaying)
         {
             cardScenario.UpdateScenarioTexts();
+            randomCharacter.RandomizeCharacter(ScenarioManager.Instance.CurrentScenario.role, ScenarioManager.Instance.CurrentScenario.type);
             newCardAnimation.Play();
             coverCard.gameObject.SetActive(false);
         }
@@ -289,13 +301,65 @@ public class DraggableSprite : MonoBehaviour
         bool passed = delta >= returnThreshold;
 
         UpdateFill(passed ? 1f : 0f);
-        
+
         // Determinar si está inclinado a la izquierda o derecha
         bool isRight = currentAngle > 0;
         bool isCentered = !passed; // true si está en el centro
         UpdateTextAlpha(passed ? 1f : 0f, isRight, isCentered);
 
+        // Actualizar indicadores de stats cuando se pasa el threshold
+        UpdateStatIndicators(passed, isRight);
+
         ApplyTransform(dragSmoothSpeed);
+    }
+
+    private void UpdateStatIndicators(bool passed, bool isRight)
+    {
+        // Solo actualizar si cambió el estado
+        if (passed != previousPassedThreshold || (passed && isRight != previousIsRight))
+        {
+            previousPassedThreshold = passed;
+            previousIsRight = isRight;
+
+            if (!passed)
+            {
+                // Desactivar todos los indicadores cuando no ha pasado el threshold
+                DeactivateAllIndicators();
+            }
+            else
+            {
+                // Activar los indicadores basados en la dirección y los efectos
+                AIScenario scenario = ScenarioManager.Instance.CurrentScenario;
+                CharacterEffect effect = isRight ? scenario.effects.right : scenario.effects.left;
+
+                DeactivateAllIndicators();
+                ActivateStatIndicators(effect);
+            }
+        }
+    }
+
+    private void DeactivateAllIndicators()
+    {
+        if (energyIndicator != null)
+            energyIndicator.SetActive(false);
+        if (peopleIndicator != null)
+            peopleIndicator.SetActive(false);
+        if (reputationIndicator != null)
+            reputationIndicator.SetActive(false);
+        if (moneyIndicator != null)
+            moneyIndicator.SetActive(false);
+    }
+
+    private void ActivateStatIndicators(CharacterEffect effect)
+    {
+        if (effect.energy != 0 && energyIndicator != null)
+            energyIndicator.SetActive(true);
+        if (effect.people != 0 && peopleIndicator != null)
+            peopleIndicator.SetActive(true);
+        if (effect.reputation != 0 && reputationIndicator != null)
+            reputationIndicator.SetActive(true);
+        if (effect.money != 0 && moneyIndicator != null)
+            moneyIndicator.SetActive(true);
     }
 
     private void HandleReturn()
@@ -372,6 +436,9 @@ public class DraggableSprite : MonoBehaviour
             else
             {
                 cardScenario.UpdateNextScenarioTexts();
+                // Generar nuevo personaje para la siguiente carta
+                randomCharacter.RandomizeCharacter(ScenarioManager.Instance.CurrentScenario.role, ScenarioManager.Instance.CurrentScenario.type);
+                randomCharacter.SetSortingOrderToBack();
             }
         }
     }
@@ -424,6 +491,7 @@ public class DraggableSprite : MonoBehaviour
                 targetRot,
                 1f - Mathf.Exp(-speed * Time.deltaTime)
             );
+           
         }
     }
 
@@ -514,6 +582,7 @@ public class DraggableSprite : MonoBehaviour
     {
         fillAmount = 0f;
         textAlpha = 0f;
+        previousPassedThreshold = false;
 
         if (fillSprite != null)
             fillSprite.size = new Vector2(fillSprite.size.x, 0f);
@@ -531,6 +600,8 @@ public class DraggableSprite : MonoBehaviour
             c.a = 0f;
             responseRight.color = c;
         }
+
+        DeactivateAllIndicators();
     }
 
     public void ResetForNewGame()
