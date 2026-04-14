@@ -9,11 +9,15 @@ public static class LoginCanvasCreator
     [MenuItem("Tools/Crear Canvas de Login + Highscore + Tutorial")]
     public static void CreateLoginCanvas()
     {
-        if (GameObject.Find("LoginCanvas") != null)
-        {
-            Debug.LogWarning("LoginCanvas ya existe en la escena.");
-            return;
-        }
+        // Borrar objetos existentes para recrearlos limpios
+        var existingCanvas = GameObject.Find("LoginCanvas");
+        if (existingCanvas != null) Undo.DestroyObjectImmediate(existingCanvas);
+
+        var existingLM = GameObject.Find("LoginManager");
+        if (existingLM != null) Undo.DestroyObjectImmediate(existingLM);
+
+        var existingTM = GameObject.Find("TutorialManager");
+        if (existingTM != null) Undo.DestroyObjectImmediate(existingTM);
 
         // ── EventSystem ──────────────────────────────────────────────────────
         if (Object.FindFirstObjectByType<EventSystem>() == null)
@@ -337,12 +341,8 @@ public static class LoginCanvasCreator
         var tm = tmGO.GetComponent<TutorialManager>() ?? tmGO.AddComponent<TutorialManager>();
 
         var soTM = new SerializedObject(tm);
-        soTM.FindProperty("tutorialPanel").objectReferenceValue     = tutorialPanel;
-        soTM.FindProperty("gesturePanel").objectReferenceValue      = gesturePanel;
-        soTM.FindProperty("chipIconEnergy").objectReferenceValue     = legendIcons[0];
-        soTM.FindProperty("chipIconPeople").objectReferenceValue     = legendIcons[1];
-        soTM.FindProperty("chipIconReputation").objectReferenceValue = legendIcons[2];
-        soTM.FindProperty("chipIconMoney").objectReferenceValue      = legendIcons[3];
+        soTM.FindProperty("tutorialPanel").objectReferenceValue = tutorialPanel;
+        soTM.FindProperty("gesturePanel").objectReferenceValue  = gesturePanel;
         soTM.ApplyModifiedProperties();
 
         // Conectar botones y toggles
