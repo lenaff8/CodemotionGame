@@ -151,7 +151,10 @@ public class LoginManager : MonoBehaviour
                 playerId    = response?.id;
                 Debug.Log($"Registrado: {name} ({email}) — id: {playerId}");
                 loginPanel.SetActive(false);
-                GameManager.IsPlaying = true;
+                if (TutorialManager.Instance != null)
+                    TutorialManager.Instance.TryShowTutorial();
+                else
+                    GameManager.IsPlaying = true;
             }
             else
             {

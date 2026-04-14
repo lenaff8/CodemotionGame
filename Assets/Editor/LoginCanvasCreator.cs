@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 
 public static class LoginCanvasCreator
 {
-    [MenuItem("Tools/Crear Canvas de Login + Highscore")]
+    [MenuItem("Tools/Crear Canvas de Login + Highscore + Tutorial")]
     public static void CreateLoginCanvas()
     {
         if (GameObject.Find("LoginCanvas") != null)
@@ -52,7 +52,6 @@ public static class LoginCanvasCreator
 
         var emailLabelGO = CreateLabel("LabelEmail", loginCard.transform, "Email", -400f);
         var emailInputGO = CreateInputField("EmailInput", loginCard.transform, "tu@email.com", -460f);
-        emailInputGO.GetComponent<TMP_InputField>().contentType = TMP_InputField.ContentType.EmailAddress;
 
         // ── Fila de privacidad: Toggle + label + link ────────────────────────
         var (privacyToggle, privacyLabelTMP, privacyLinkBtn) = CreatePrivacyRow(loginCard.transform, -610f);
@@ -172,6 +171,132 @@ public static class LoginCanvasCreator
         var retryBtn = CreateButton("RetryButton", hsCard.transform, "Jugar de nuevo",
             new Color(0.2f, 0.75f, 0.4f, 1f), -1080f, 100f);
 
+        // ════════════════════════════════════════════════════════════════════
+        // PANEL TUTORIAL — Panel 1: instrucciones + leyenda de fichas
+        // ════════════════════════════════════════════════════════════════════
+        var tutorialPanel = CreatePanel("TutorialPanel", canvasGO.transform, new Color(0f, 0f, 0f, 0.88f));
+        tutorialPanel.SetActive(false);
+
+        var tutCard = CreateCard("Card", tutorialPanel.transform, new Vector2(700f, 1100f));
+
+        // Texto de instrucción
+        var instrGO = CreateUIObject("InstructionText", tutCard.transform);
+        var instrTMP = instrGO.AddComponent<TextMeshProUGUI>();
+        instrTMP.text = "Haz swap a la derecha e izquierda, toma una decisión y no pierdas las fichas";
+        instrTMP.fontSize = 42;
+        instrTMP.alignment = TextAlignmentOptions.Center;
+        instrTMP.color = Color.white;
+        instrTMP.enableWordWrapping = true;
+        var instrRT = instrGO.GetComponent<RectTransform>();
+        instrRT.anchorMin = new Vector2(0.5f, 1f);
+        instrRT.anchorMax = new Vector2(0.5f, 1f);
+        instrRT.pivot = new Vector2(0.5f, 1f);
+        instrRT.sizeDelta = new Vector2(600f, 250f);
+        instrRT.anchoredPosition = new Vector2(0f, -60f);
+
+        // Separador
+        var tutSepGO = CreateUIObject("Separator", tutCard.transform);
+        var tutSepImg = tutSepGO.AddComponent<Image>();
+        tutSepImg.color = new Color(1f, 1f, 1f, 0.15f);
+        var tutSepRT = tutSepGO.GetComponent<RectTransform>();
+        tutSepRT.anchorMin = new Vector2(0.5f, 1f);
+        tutSepRT.anchorMax = new Vector2(0.5f, 1f);
+        tutSepRT.pivot = new Vector2(0.5f, 1f);
+        tutSepRT.sizeDelta = new Vector2(580f, 2f);
+        tutSepRT.anchoredPosition = new Vector2(0f, -330f);
+
+        // ── Leyenda de fichas ────────────────────────────────────────────────
+        string[] chipNames = { "Energía", "Personas", "Reputación", "Dinero" };
+        string[] chipFieldNames = {
+            "chipIconEnergy", "chipIconPeople", "chipIconReputation", "chipIconMoney"
+        };
+        Image[] legendIcons = new Image[4];
+
+        for (int i = 0; i < 4; i++)
+        {
+            float rowY = -360f - i * 130f;
+
+            var rowGO = CreateUIObject($"ChipRow{i}", tutCard.transform);
+            var rowRT = rowGO.GetComponent<RectTransform>();
+            rowRT.anchorMin = new Vector2(0.5f, 1f);
+            rowRT.anchorMax = new Vector2(0.5f, 1f);
+            rowRT.pivot = new Vector2(0.5f, 1f);
+            rowRT.sizeDelta = new Vector2(560f, 110f);
+            rowRT.anchoredPosition = new Vector2(0f, rowY);
+
+            // Icono de la ficha
+            var iconGO = CreateUIObject("ChipIcon", rowGO.transform);
+            var iconImg = iconGO.AddComponent<Image>();
+            iconImg.color = new Color(1f, 1f, 1f, 0.9f);
+            legendIcons[i] = iconImg;
+            var iconRT = iconGO.GetComponent<RectTransform>();
+            iconRT.anchorMin = new Vector2(0f, 0.5f);
+            iconRT.anchorMax = new Vector2(0f, 0.5f);
+            iconRT.pivot = new Vector2(0f, 0.5f);
+            iconRT.sizeDelta = new Vector2(80f, 80f);
+            iconRT.anchoredPosition = new Vector2(0f, 0f);
+
+            // Nombre de la ficha
+            var nameGO = CreateUIObject("ChipName", rowGO.transform);
+            var nameTMP = nameGO.AddComponent<TextMeshProUGUI>();
+            nameTMP.text = chipNames[i];
+            nameTMP.fontSize = 48;
+            nameTMP.fontStyle = FontStyles.Bold;
+            nameTMP.alignment = TextAlignmentOptions.MidlineLeft;
+            nameTMP.color = Color.white;
+            var nameRT = nameGO.GetComponent<RectTransform>();
+            nameRT.anchorMin = new Vector2(0f, 0f);
+            nameRT.anchorMax = new Vector2(1f, 1f);
+            nameRT.offsetMin = new Vector2(105f, 0f);
+            nameRT.offsetMax = new Vector2(0f, 0f);
+        }
+
+        // Botón OK
+        var okBtn = CreateButton("OkButton", tutCard.transform, "OK",
+            new Color(0.2f, 0.6f, 1f, 1f), -920f, 100f);
+
+        // ════════════════════════════════════════════════════════════════════
+        // PANEL GESTURE — Panel 2: imágenes de gestos (flechas + mano)
+        // ════════════════════════════════════════════════════════════════════
+        var gesturePanel = CreateUIObject("GesturePanel", canvasGO.transform);
+        var gesturePanelImg = gesturePanel.AddComponent<Image>();
+        gesturePanelImg.color = Color.clear;
+        StretchFull(gesturePanel.GetComponent<RectTransform>());
+        gesturePanel.SetActive(false);
+
+        // Flecha izquierda
+        var arrowLeftGO = CreateUIObject("ArrowLeft", gesturePanel.transform);
+        var arrowLeftImg = arrowLeftGO.AddComponent<Image>();
+        arrowLeftImg.color = Color.white;
+        var arrowLeftRT = arrowLeftGO.GetComponent<RectTransform>();
+        arrowLeftRT.anchorMin = new Vector2(0.5f, 0.5f);
+        arrowLeftRT.anchorMax = new Vector2(0.5f, 0.5f);
+        arrowLeftRT.pivot = new Vector2(0.5f, 0.5f);
+        arrowLeftRT.sizeDelta = new Vector2(140f, 140f);
+        arrowLeftRT.anchoredPosition = new Vector2(-300f, 0f);
+
+        // Flecha derecha
+        var arrowRightGO = CreateUIObject("ArrowRight", gesturePanel.transform);
+        var arrowRightImg = arrowRightGO.AddComponent<Image>();
+        arrowRightImg.color = Color.white;
+        var arrowRightRT = arrowRightGO.GetComponent<RectTransform>();
+        arrowRightRT.anchorMin = new Vector2(0.5f, 0.5f);
+        arrowRightRT.anchorMax = new Vector2(0.5f, 0.5f);
+        arrowRightRT.pivot = new Vector2(0.5f, 0.5f);
+        arrowRightRT.sizeDelta = new Vector2(140f, 140f);
+        arrowRightRT.anchoredPosition = new Vector2(300f, 0f);
+
+        // Mano apuntando a la carta
+        var handGO = CreateUIObject("HandPointer", gesturePanel.transform);
+        var handImg = handGO.AddComponent<Image>();
+        handImg.color = Color.white;
+        var handRT = handGO.GetComponent<RectTransform>();
+        handRT.anchorMin = new Vector2(0.5f, 0.5f);
+        handRT.anchorMax = new Vector2(0.5f, 0.5f);
+        handRT.pivot = new Vector2(0.5f, 0.5f);
+        handRT.sizeDelta = new Vector2(140f, 140f);
+        handRT.anchoredPosition = new Vector2(0f, -200f);
+
         // ── Conectar LoginManager ────────────────────────────────────────────
         var lmGO = GameObject.Find("LoginManager") ?? new GameObject("LoginManager");
         var lm = lmGO.GetComponent<LoginManager>() ?? lmGO.AddComponent<LoginManager>();
@@ -192,6 +317,19 @@ public static class LoginCanvasCreator
         so.FindProperty("retryButton").objectReferenceValue       = retryBtn;
         so.ApplyModifiedProperties();
 
+        // ── Conectar TutorialManager ─────────────────────────────────────────
+        var tmGO = GameObject.Find("TutorialManager") ?? new GameObject("TutorialManager");
+        var tm = tmGO.GetComponent<TutorialManager>() ?? tmGO.AddComponent<TutorialManager>();
+
+        var soTM = new SerializedObject(tm);
+        soTM.FindProperty("tutorialPanel").objectReferenceValue     = tutorialPanel;
+        soTM.FindProperty("gesturePanel").objectReferenceValue      = gesturePanel;
+        soTM.FindProperty("chipIconEnergy").objectReferenceValue     = legendIcons[0];
+        soTM.FindProperty("chipIconPeople").objectReferenceValue     = legendIcons[1];
+        soTM.FindProperty("chipIconReputation").objectReferenceValue = legendIcons[2];
+        soTM.FindProperty("chipIconMoney").objectReferenceValue      = legendIcons[3];
+        soTM.ApplyModifiedProperties();
+
         // Conectar botones y toggles
         UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
             registerBtn.onClick, lm.OnRegisterPressed);
@@ -201,12 +339,14 @@ public static class LoginCanvasCreator
             privacyToggle.onValueChanged, lm.OnPrivacyToggleChanged, false);
         UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
             privacyLinkBtn.onClick, lm.OpenPrivacyLink);
+        UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
+            okBtn.onClick, tm.OnOkPressed);
 
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
             UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 
         Selection.activeGameObject = canvasGO;
-        Debug.Log("✓ LoginCanvas con panel de Login y Highscore creado. Guarda con Ctrl+S.");
+        Debug.Log("✓ LoginCanvas con Login, Highscore y Tutorial creado. Guarda con Ctrl+S.");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

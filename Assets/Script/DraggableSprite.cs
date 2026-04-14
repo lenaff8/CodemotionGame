@@ -136,7 +136,7 @@ public class DraggableSprite : MonoBehaviour
                 return exceeded ? "Demasiada fama. Los medios destrozan la empresa."
                                 : "Tu reputación está por los suelos. Nadie confía en ti.";
             case GameManager.StatType.Money:
-                return exceeded ? "Demasiado dinero. Los inversores se lo llevaron todo."
+                return exceeded ? "Inspección de Hacienda encuentra irregularidades en un crecimiento tan rápido."
                                 : "La empresa quiebra. No queda ni un euro.";
             default:
                 return "La empresa no pudo seguir adelante.";
@@ -229,6 +229,7 @@ public class DraggableSprite : MonoBehaviour
                 targetWorldPos = transform.position;
                 Vector2 dir = (transform.position - center.position).normalized;
                 currentAngle = Mathf.Atan2(dir.x, dir.y) * Mathf.Rad2Deg;
+                TutorialManager.Instance?.HideGesturePanel();
             }
         }
 
