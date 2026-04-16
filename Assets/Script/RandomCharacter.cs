@@ -6,6 +6,7 @@ public class RandomCharacter : MonoBehaviour
 {
     [SerializeField] private GameObject normalCardGroup;
     [SerializeField] private GameObject jokerCardGroup;
+    [SerializeField] private GameObject gameOverCard;
 
     [SerializeField] private SpriteRenderer body;
     [SerializeField] private SpriteRenderer eyes;
@@ -20,6 +21,10 @@ public class RandomCharacter : MonoBehaviour
     [SerializeField] private SpriteRenderer jokerCharacterRenderer;
     [SerializeField] private SpriteRenderer jokerSuitRenderer;
     [SerializeField] private SpriteRenderer jokerSuitRenderer2;
+
+    [SerializeField] private SpriteRenderer gameOverCardRenderer;
+    [SerializeField] private SpriteRenderer gameOverCardSuitRenderer;
+    [SerializeField] private SpriteRenderer gameOverCardSuit2Renderer;
 
     [SerializeField] private List<Sprite> bodySprites = new List<Sprite>();
     [SerializeField] private List<Sprite> eyesSprites = new List<Sprite>();
@@ -41,6 +46,9 @@ public class RandomCharacter : MonoBehaviour
     private int originalJokerCharacterOrder;
     private int originalJokerSuitOrder;
     private int originalJokerSuitOrder2;
+    private int originalGameOverCardOrder;
+    private int originalGameOverCardSuitOrder;
+    private int originalGameOverCardSuit2Order; 
 
     private bool isJokerMode = false;
 
@@ -91,7 +99,7 @@ public class RandomCharacter : MonoBehaviour
             suitSymbol2.sprite = randomSymbol;
         }
 
-        // Asignar n�mero basado en el rol
+        // Asignar n?mero basado en el rol
         SetRankByRole(role);
     }
 
@@ -106,19 +114,11 @@ public class RandomCharacter : MonoBehaviour
 
         if (isJokerMode)
         {
-            // Activar modo joker
-            if (normalCardGroup != null)
-                normalCardGroup.SetActive(false);
-            if (jokerCardGroup != null)
-                jokerCardGroup.SetActive(true);
+            ShowJokerCardGroup();
         }
         else
         {
-            // Activar modo people
-            if (normalCardGroup != null)
-                normalCardGroup.SetActive(true);
-            if (jokerCardGroup != null)
-                jokerCardGroup.SetActive(false);
+            ShowNormalCardGroup();
         }
     }
 
@@ -141,11 +141,11 @@ public class RandomCharacter : MonoBehaviour
         if (string.IsNullOrEmpty(role))
             return Random.Range(0, rankSprites.Count);
 
-        // Normalizar el rol a min�sculas para comparaci�n case-insensitive
+        // Normalizar el rol a min?sculas para comparaci?n case-insensitive
         role = role.ToLower().Trim();
 
         if (role.Contains("Company Owner"))
-            return 12; // A (�ndice 12 si es 2-10, J, Q, K, A)
+            return 12; // A (?ndice 12 si es 2-10, J, Q, K, A)
         else if (role.Contains("CEO"))
             return 11; // K
         else if (role.Contains("Human Resources"))
@@ -170,6 +170,9 @@ public class RandomCharacter : MonoBehaviour
         originalJokerCharacterOrder = jokerCharacterRenderer.sortingOrder;
         originalJokerSuitOrder = jokerSuitRenderer.sortingOrder;
         originalJokerSuitOrder2 = jokerSuitRenderer2.sortingOrder;
+        originalGameOverCardOrder = gameOverCardRenderer.sortingOrder;
+        originalGameOverCardSuitOrder = gameOverCardSuitRenderer.sortingOrder;
+        originalGameOverCardSuit2Order = gameOverCardSuit2Renderer.sortingOrder;
     }
 
     public void SetSortingOrderToBack()
@@ -186,6 +189,9 @@ public class RandomCharacter : MonoBehaviour
         jokerCharacterRenderer.sortingOrder = -1;
         jokerSuitRenderer.sortingOrder = -1;
         jokerSuitRenderer2.sortingOrder = -1;
+        gameOverCardRenderer.sortingOrder = -1;
+        gameOverCardSuitRenderer.sortingOrder = -1;
+        gameOverCardSuit2Renderer.sortingOrder = -1;
     }
 
     public void RestoreSortingOrder()
@@ -202,5 +208,31 @@ public class RandomCharacter : MonoBehaviour
         jokerCharacterRenderer.sortingOrder = originalJokerCharacterOrder;
         jokerSuitRenderer.sortingOrder = originalJokerSuitOrder;
         jokerSuitRenderer2.sortingOrder = originalJokerSuitOrder2;
+        gameOverCardRenderer.sortingOrder = originalGameOverCardOrder;
+        gameOverCardSuitRenderer.sortingOrder = originalGameOverCardSuitOrder;
+        gameOverCardSuit2Renderer.sortingOrder = originalGameOverCardSuit2Order;
+    }
+
+    public void ShowNormalCardGroup()
+    {
+        normalCardGroup.SetActive(true);
+        jokerCardGroup.SetActive(false);
+        gameOverCard.SetActive(false);
+        SetSortingOrderToBack();
+    }
+    public void ShowJokerCardGroup()
+    {
+        normalCardGroup.SetActive(false);
+        jokerCardGroup.SetActive(true);
+        gameOverCard.SetActive(false);
+        SetSortingOrderToBack();
+    }
+
+    public void ShowGameOverCard()
+    {
+        normalCardGroup.SetActive(false);
+        jokerCardGroup.SetActive(false);
+        gameOverCard.SetActive(true);
+        SetSortingOrderToBack();
     }
 }

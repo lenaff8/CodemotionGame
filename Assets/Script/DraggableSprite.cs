@@ -47,9 +47,9 @@ public class DraggableSprite : MonoBehaviour
     private bool isRightPrevious = false;
 
     private CardScenario cardScenario;
-    
+
     [SerializeField] private RandomCharacter randomCharacter;
-    
+
     private enum State
     {
         Idle,
@@ -64,8 +64,8 @@ public class DraggableSprite : MonoBehaviour
 
     private float radius;
 
-    private float baseAngle;     
-    private float startAngle;    
+    private float baseAngle;
+    private float startAngle;
     private float currentAngle;
 
     private Vector3 originalPosition;
@@ -80,7 +80,8 @@ public class DraggableSprite : MonoBehaviour
     [SerializeField] private float gameOverDelay = 3.5f;
     [SerializeField] private SpriteRenderer cardFaceRenderer; // opcional
     [SerializeField] private Sprite[] gameOverSprites;        // opcional, 8 sprites: Energy_min/max, People_min/max, Rep_min/max, Money_min/max
-    [SerializeField] private string[] gameOverPhrases = {
+    [SerializeField]
+    private string[] gameOverPhrases = {
         "Esto...", "Eh...", "Vaya...", "Uf...", "Bueno...",
         "Hmm...", "Ay...", "Oh...", "Madre mía...", "Ejem...",
         "Pues...", "Ostras...", "Vamos...", "Buf...", "Anda..."
@@ -95,11 +96,11 @@ public class DraggableSprite : MonoBehaviour
     private NewCardAnimation newCardAnimation;
     private bool interactable = false;
     private bool pendingPlay = false;
-    private int gameOverStep = 0; // 0=normal, 1=última carta snap→mostrará game over, 2=carta game over activa
+    private int gameOverStep = 0; // 0=normal, 1=última carta snap?mostrará game over, 2=carta game over activa
 
     private bool previousPassedThreshold = false;
     private bool previousIsRight = false;
-    
+
     private void Awake()
     {
         cam = Camera.main;
@@ -135,12 +136,14 @@ public class DraggableSprite : MonoBehaviour
             if (index < gameOverSprites.Length && gameOverSprites[index] != null)
                 cardFaceRenderer.sprite = gameOverSprites[index];
         }
+
+        randomCharacter.ShowGameOverCard();
     }
 
     private void OnGameOver()
     {
-        if (coverCard != null)
-            coverCard.gameObject.SetActive(true);
+        coverCard.gameObject.SetActive(true);
+        randomCharacter.ShowGameOverCard();
     }
 
     private string GetGameOverPhrase(GameManager.StatType stat, bool exceeded)
@@ -148,17 +151,17 @@ public class DraggableSprite : MonoBehaviour
         switch (stat)
         {
             case GameManager.StatType.Energy:
-                return exceeded ? "El equipo está al límite del estrés. Nadie puede más."
-                                : "Sin energía, el equipo se desmorona.";
+                return exceeded ? "Demasiada energía. El equipo está al límite del estrés. Nadie puede más."
+                                : "Ya no hay energía. El equipo se desmorona.";
             case GameManager.StatType.People:
                 return exceeded ? "Demasiada gente. El caos se apodera de la empresa."
-                                : "Tu equipo te ha abandonado. Estás solo.";
+                                : "Ya no hay gente. Tu equipo te ha abandonado. Estás solo.";
             case GameManager.StatType.Reputation:
                 return exceeded ? "Demasiada fama. Los medios destrozan la empresa."
-                                : "Tu reputación está por los suelos. Nadie confía en ti.";
+                                : "Ya nadie te quiere. Tu reputación está por los suelos. Nadie confía en ti.";
             case GameManager.StatType.Money:
-                return exceeded ? "Inspección de Hacienda encuentra irregularidades en un crecimiento tan rápido."
-                                : "La empresa quiebra. No queda ni un euro.";
+                return exceeded ? "Demasiado dinero. Inspección de Hacienda encuentra irregularidades en un crecimiento tan rápido."
+                                : "Ya no hay dinero. La empresa quiebra. No queda ni un euro.";
             default:
                 return "La empresa no pudo seguir adelante.";
         }
@@ -239,7 +242,7 @@ public class DraggableSprite : MonoBehaviour
     {
         if (!interactable)
             return;
-        
+
         if (input.ClickPressed)
         {
             Vector2 worldPos = ScreenToWorld(input.PointerPosition);
@@ -257,12 +260,12 @@ public class DraggableSprite : MonoBehaviour
 
         if (input.ClickReleased && state == State.Dragging)
         {
-            float delta = Mathf.Abs(Mathf.DeltaAngle(baseAngle, currentAngle)); 
+            float delta = Mathf.Abs(Mathf.DeltaAngle(baseAngle, currentAngle));
 
             if (delta < returnThreshold)
             {
                 state = State.Returning;
-                startAngle = baseAngle; 
+                startAngle = baseAngle;
             }
             else
             {
@@ -428,7 +431,7 @@ public class DraggableSprite : MonoBehaviour
 
             if (gameOverStep == 2)
             {
-                // Carta game over deslizada → esperar delay y mostrar highscore
+                // Carta game over deslizada ? esperar delay y mostrar highscore
                 gameOverStep = 0;
                 state = State.Idle;
                 GameManager.Instance.StartGameOverTimer(gameOverDelay);
@@ -440,7 +443,7 @@ public class DraggableSprite : MonoBehaviour
 
             if (gameOverStep == 1)
             {
-                // Última carta regular snapeada → mostrar carta game over (textos ya seteados)
+                // Última carta regular snapeada ? mostrar carta game over (textos ya seteados)
                 gameOverStep = 2;
             }
             else
@@ -454,7 +457,7 @@ public class DraggableSprite : MonoBehaviour
     }
 
     // =========================
-    // WAIT → CARD
+    // WAIT ? CARD
     // =========================
     private void HandleCardWaiting()
     {
@@ -501,7 +504,7 @@ public class DraggableSprite : MonoBehaviour
                 targetRot,
                 1f - Mathf.Exp(-speed * Time.deltaTime)
             );
-           
+
         }
     }
 
@@ -547,7 +550,7 @@ public class DraggableSprite : MonoBehaviour
 
             // Evaluar la curva de animación
             float curveValue = alphaAnimationCurve.Evaluate(alphaTimer);
-            
+
             // Interpolar entre el valor actual y el target usando la curva
             textAlpha = Mathf.Lerp(textAlpha, target, curveValue);
         }
@@ -561,7 +564,7 @@ public class DraggableSprite : MonoBehaviour
                 c.a = textAlpha;
                 responseRight.color = c;
             }
-            
+
             if (responseLeft != null)
             {
                 Color c = responseLeft.color;
@@ -578,7 +581,7 @@ public class DraggableSprite : MonoBehaviour
                 c.a = textAlpha;
                 responseLeft.color = c;
             }
-            
+
             if (responseRight != null)
             {
                 Color c = responseRight.color;
@@ -632,6 +635,7 @@ public class DraggableSprite : MonoBehaviour
 
         ResetVisuals();
 
+        randomCharacter.ShowNormalCardGroup();
         // Re-suscribir para que StartDelay arranque con el primer escenario nuevo
         ScenarioManager.Instance.onScenarioGenerated += StartDelay;
     }
