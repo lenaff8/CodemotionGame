@@ -20,6 +20,7 @@ public class NewCardAnimation : MonoBehaviour
 
     private bool playing;
     private DraggableSprite draggableSprite;
+    [SerializeField] private RandomCharacter randomCharacter;
 
     private void Start()
     {
@@ -36,7 +37,22 @@ public class NewCardAnimation : MonoBehaviour
         // =========================
         rotT += Time.deltaTime / rotationDuration;
         float rotK = rotationCurve.Evaluate(Mathf.Clamp01(rotT));
+        
+        // Chequear la rotación Y de la carta
+        float yRotation = transform.eulerAngles.y;
 
+        // Normalizar a rango 0-360
+        if (yRotation > 180f)
+            yRotation = 360f - yRotation;
+
+        if (yRotation > 90f && randomCharacter != null)
+        {
+            randomCharacter.SetSortingOrderToBack();
+        }
+        else if (yRotation <= 90f && randomCharacter != null)
+        {
+            randomCharacter.RestoreSortingOrder();
+        }
         float y = Mathf.Lerp(rotationAngle, 0f, rotK);
         transform.localRotation = Quaternion.Euler(0f, y, 0f);
 
