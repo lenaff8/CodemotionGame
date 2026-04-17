@@ -6,14 +6,18 @@ using UnityEngine.EventSystems;
 
 public static class LoginCanvasCreator
 {
-    [MenuItem("Tools/Crear Canvas de Login + Highscore")]
+    [MenuItem("Tools/Crear Canvas de Login + Highscore + Tutorial")]
     public static void CreateLoginCanvas()
     {
-        if (GameObject.Find("LoginCanvas") != null)
-        {
-            Debug.LogWarning("LoginCanvas ya existe en la escena.");
-            return;
-        }
+        // Borrar objetos existentes para recrearlos limpios
+        var existingCanvas = GameObject.Find("LoginCanvas");
+        if (existingCanvas != null) Undo.DestroyObjectImmediate(existingCanvas);
+
+        var existingLM = GameObject.Find("LoginManager");
+        if (existingLM != null) Undo.DestroyObjectImmediate(existingLM);
+
+        var existingTM = GameObject.Find("TutorialManager");
+        if (existingTM != null) Undo.DestroyObjectImmediate(existingTM);
 
         // ── EventSystem ──────────────────────────────────────────────────────
         if (Object.FindFirstObjectByType<EventSystem>() == null)
@@ -42,7 +46,7 @@ public static class LoginCanvasCreator
         // ════════════════════════════════════════════════════════════════════
         var loginPanel = CreatePanel("LoginPanel", canvasGO.transform, new Color(0f, 0f, 0f, 0.85f));
 
-        var loginCard = CreateCard("Card", loginPanel.transform, new Vector2(700f, 900f));
+        var loginCard = CreateCard("Card", loginPanel.transform, new Vector2(700f, 1030f));
 
         CreateTitle(loginCard.transform, "Registro", -60f);
 
@@ -52,13 +56,21 @@ public static class LoginCanvasCreator
 
         var emailLabelGO = CreateLabel("LabelEmail", loginCard.transform, "Email", -400f);
         var emailInputGO = CreateInputField("EmailInput", loginCard.transform, "tu@email.com", -460f);
-        emailInputGO.GetComponent<TMP_InputField>().contentType = TMP_InputField.ContentType.EmailAddress;
 
-        // ── Fila de privacidad: Toggle + label + link ────────────────────────
-        var (privacyToggle, privacyLabelTMP, privacyLinkBtn) = CreatePrivacyRow(loginCard.transform, -610f);
+        // ── Fila de privacidad ───────────────────────────────────────────────
+        var (privacyToggle, privacyLabelTMP, privacyLinkBtn) = CreateCheckboxRow(
+            "PrivacyRow", loginCard.transform,
+            "He leído y acepto la", "política de privacidad",
+            -610f);
+
+        // ── Fila de bases del juego ──────────────────────────────────────────
+        var (gameRulesToggle, gameRulesLabelTMP, gameRulesLinkBtn) = CreateCheckboxRow(
+            "GameRulesRow", loginCard.transform,
+            "He leído y acepto las", "bases del juego",
+            -715f);
 
         var registerBtn = CreateButton("RegisterButton", loginCard.transform, "Empezar a jugar",
-            new Color(0.2f, 0.6f, 1f, 1f), -720f, 100f);
+            new Color(0.2f, 0.6f, 1f, 1f), -835f, 100f);
 
         var feedbackGO = CreateUIObject("FeedbackText", loginCard.transform);
         var feedbackTMP = feedbackGO.AddComponent<TextMeshProUGUI>();
@@ -83,7 +95,7 @@ public static class LoginCanvasCreator
 
         CreateTitle(hsCard.transform, "Game Over", -60f);
 
-        // Puntuación del jugador
+        // Puntuación de esta partida
         var playerScoreGO = CreateUIObject("PlayerScoreText", hsCard.transform);
         var playerScoreTMP = playerScoreGO.AddComponent<TextMeshProUGUI>();
         playerScoreTMP.text = "Tu puntuación: 0 días";
@@ -98,6 +110,20 @@ public static class LoginCanvasCreator
         psRT.sizeDelta = new Vector2(620f, 60f);
         psRT.anchoredPosition = new Vector2(0f, -170f);
 
+        // Mejor puntuación personal
+        var playerBestGO = CreateUIObject("PlayerBestText", hsCard.transform);
+        var playerBestTMP = playerBestGO.AddComponent<TextMeshProUGUI>();
+        playerBestTMP.text = "";
+        playerBestTMP.fontSize = 36;
+        playerBestTMP.alignment = TextAlignmentOptions.Center;
+        playerBestTMP.color = new Color(0.4f, 0.9f, 0.6f, 1f);
+        var pbRT = playerBestGO.GetComponent<RectTransform>();
+        pbRT.anchorMin = new Vector2(0.5f, 1f);
+        pbRT.anchorMax = new Vector2(0.5f, 1f);
+        pbRT.pivot = new Vector2(0.5f, 1f);
+        pbRT.sizeDelta = new Vector2(620f, 50f);
+        pbRT.anchoredPosition = new Vector2(0f, -235f);
+
         // Separador
         var sepGO = CreateUIObject("Separator", hsCard.transform);
         var sepImg = sepGO.AddComponent<Image>();
@@ -107,7 +133,7 @@ public static class LoginCanvasCreator
         sepRT.anchorMax = new Vector2(0.5f, 1f);
         sepRT.pivot = new Vector2(0.5f, 1f);
         sepRT.sizeDelta = new Vector2(580f, 2f);
-        sepRT.anchoredPosition = new Vector2(0f, -250f);
+        sepRT.anchoredPosition = new Vector2(0f, -300f);
 
         // Título ranking
         var rankTitleGO = CreateUIObject("RankingTitle", hsCard.transform);
@@ -122,7 +148,7 @@ public static class LoginCanvasCreator
         rtRT.anchorMax = new Vector2(0.5f, 1f);
         rtRT.pivot = new Vector2(0.5f, 1f);
         rtRT.sizeDelta = new Vector2(620f, 50f);
-        rtRT.anchoredPosition = new Vector2(0f, -275f);
+        rtRT.anchoredPosition = new Vector2(0f, -325f);
 
         // Texto de estado (Cargando... / errores) — centrado, encima de las columnas
         var lbStatusGO = CreateUIObject("LeaderboardStatus", hsCard.transform);
@@ -136,7 +162,7 @@ public static class LoginCanvasCreator
         lbStatusRT.anchorMax = new Vector2(0.5f, 1f);
         lbStatusRT.pivot = new Vector2(0.5f, 1f);
         lbStatusRT.sizeDelta = new Vector2(600f, 50f);
-        lbStatusRT.anchoredPosition = new Vector2(0f, -345f);
+        lbStatusRT.anchoredPosition = new Vector2(0f, -395f);
 
         // Columna izquierda: puntuación (con medalla)
         var lbLeftGO = CreateUIObject("LeaderboardLeft", hsCard.transform);
@@ -151,7 +177,7 @@ public static class LoginCanvasCreator
         lbLeftRT.anchorMax = new Vector2(0f, 1f);
         lbLeftRT.pivot = new Vector2(0f, 1f);
         lbLeftRT.sizeDelta = new Vector2(230f, 470f);
-        lbLeftRT.anchoredPosition = new Vector2(40f, -410f);
+        lbLeftRT.anchoredPosition = new Vector2(40f, -460f);
 
         // Columna derecha: nombre
         var lbRightGO = CreateUIObject("LeaderboardRight", hsCard.transform);
@@ -166,11 +192,137 @@ public static class LoginCanvasCreator
         lbRightRT.anchorMax = new Vector2(0f, 1f);
         lbRightRT.pivot = new Vector2(0f, 1f);
         lbRightRT.sizeDelta = new Vector2(400f, 470f);
-        lbRightRT.anchoredPosition = new Vector2(280f, -410f);
+        lbRightRT.anchoredPosition = new Vector2(280f, -460f);
 
         // Botón Reintentar
         var retryBtn = CreateButton("RetryButton", hsCard.transform, "Jugar de nuevo",
             new Color(0.2f, 0.75f, 0.4f, 1f), -1080f, 100f);
+
+        // ════════════════════════════════════════════════════════════════════
+        // PANEL TUTORIAL — Panel 1: instrucciones + leyenda de fichas
+        // ════════════════════════════════════════════════════════════════════
+        var tutorialPanel = CreatePanel("TutorialPanel", canvasGO.transform, new Color(0f, 0f, 0f, 0.88f));
+        tutorialPanel.SetActive(false);
+
+        var tutCard = CreateCard("Card", tutorialPanel.transform, new Vector2(700f, 1100f));
+
+        // Texto de instrucción
+        var instrGO = CreateUIObject("InstructionText", tutCard.transform);
+        var instrTMP = instrGO.AddComponent<TextMeshProUGUI>();
+        instrTMP.text = "Haz swap a la derecha e izquierda, toma una decisión y no pierdas las fichas";
+        instrTMP.fontSize = 42;
+        instrTMP.alignment = TextAlignmentOptions.Center;
+        instrTMP.color = Color.white;
+        instrTMP.enableWordWrapping = true;
+        var instrRT = instrGO.GetComponent<RectTransform>();
+        instrRT.anchorMin = new Vector2(0.5f, 1f);
+        instrRT.anchorMax = new Vector2(0.5f, 1f);
+        instrRT.pivot = new Vector2(0.5f, 1f);
+        instrRT.sizeDelta = new Vector2(600f, 250f);
+        instrRT.anchoredPosition = new Vector2(0f, -60f);
+
+        // Separador
+        var tutSepGO = CreateUIObject("Separator", tutCard.transform);
+        var tutSepImg = tutSepGO.AddComponent<Image>();
+        tutSepImg.color = new Color(1f, 1f, 1f, 0.15f);
+        var tutSepRT = tutSepGO.GetComponent<RectTransform>();
+        tutSepRT.anchorMin = new Vector2(0.5f, 1f);
+        tutSepRT.anchorMax = new Vector2(0.5f, 1f);
+        tutSepRT.pivot = new Vector2(0.5f, 1f);
+        tutSepRT.sizeDelta = new Vector2(580f, 2f);
+        tutSepRT.anchoredPosition = new Vector2(0f, -330f);
+
+        // ── Leyenda de fichas ────────────────────────────────────────────────
+        string[] chipNames = { "Energía", "Personas", "Reputación", "Dinero" };
+        string[] chipFieldNames = {
+            "chipIconEnergy", "chipIconPeople", "chipIconReputation", "chipIconMoney"
+        };
+        Image[] legendIcons = new Image[4];
+
+        for (int i = 0; i < 4; i++)
+        {
+            float rowY = -360f - i * 130f;
+
+            var rowGO = CreateUIObject($"ChipRow{i}", tutCard.transform);
+            var rowRT = rowGO.GetComponent<RectTransform>();
+            rowRT.anchorMin = new Vector2(0.5f, 1f);
+            rowRT.anchorMax = new Vector2(0.5f, 1f);
+            rowRT.pivot = new Vector2(0.5f, 1f);
+            rowRT.sizeDelta = new Vector2(560f, 110f);
+            rowRT.anchoredPosition = new Vector2(0f, rowY);
+
+            // Icono de la ficha
+            var iconGO = CreateUIObject("ChipIcon", rowGO.transform);
+            var iconImg = iconGO.AddComponent<Image>();
+            iconImg.color = new Color(1f, 1f, 1f, 0.9f);
+            legendIcons[i] = iconImg;
+            var iconRT = iconGO.GetComponent<RectTransform>();
+            iconRT.anchorMin = new Vector2(0f, 0.5f);
+            iconRT.anchorMax = new Vector2(0f, 0.5f);
+            iconRT.pivot = new Vector2(0f, 0.5f);
+            iconRT.sizeDelta = new Vector2(80f, 80f);
+            iconRT.anchoredPosition = new Vector2(0f, 0f);
+
+            // Nombre de la ficha
+            var nameGO = CreateUIObject("ChipName", rowGO.transform);
+            var nameTMP = nameGO.AddComponent<TextMeshProUGUI>();
+            nameTMP.text = chipNames[i];
+            nameTMP.fontSize = 48;
+            nameTMP.fontStyle = FontStyles.Bold;
+            nameTMP.alignment = TextAlignmentOptions.MidlineLeft;
+            nameTMP.color = Color.white;
+            var nameRT = nameGO.GetComponent<RectTransform>();
+            nameRT.anchorMin = new Vector2(0f, 0f);
+            nameRT.anchorMax = new Vector2(1f, 1f);
+            nameRT.offsetMin = new Vector2(105f, 0f);
+            nameRT.offsetMax = new Vector2(0f, 0f);
+        }
+
+        // Botón OK
+        var okBtn = CreateButton("OkButton", tutCard.transform, "OK",
+            new Color(0.2f, 0.6f, 1f, 1f), -920f, 100f);
+
+        // ════════════════════════════════════════════════════════════════════
+        // PANEL GESTURE — Panel 2: imágenes de gestos (flechas + mano)
+        // ════════════════════════════════════════════════════════════════════
+        var gesturePanel = CreateUIObject("GesturePanel", canvasGO.transform);
+        var gesturePanelImg = gesturePanel.AddComponent<Image>();
+        gesturePanelImg.color = Color.clear;
+        StretchFull(gesturePanel.GetComponent<RectTransform>());
+        gesturePanel.SetActive(false);
+
+        // Flecha izquierda
+        var arrowLeftGO = CreateUIObject("ArrowLeft", gesturePanel.transform);
+        var arrowLeftImg = arrowLeftGO.AddComponent<Image>();
+        arrowLeftImg.color = Color.white;
+        var arrowLeftRT = arrowLeftGO.GetComponent<RectTransform>();
+        arrowLeftRT.anchorMin = new Vector2(0.5f, 0.5f);
+        arrowLeftRT.anchorMax = new Vector2(0.5f, 0.5f);
+        arrowLeftRT.pivot = new Vector2(0.5f, 0.5f);
+        arrowLeftRT.sizeDelta = new Vector2(140f, 140f);
+        arrowLeftRT.anchoredPosition = new Vector2(-300f, 0f);
+
+        // Flecha derecha
+        var arrowRightGO = CreateUIObject("ArrowRight", gesturePanel.transform);
+        var arrowRightImg = arrowRightGO.AddComponent<Image>();
+        arrowRightImg.color = Color.white;
+        var arrowRightRT = arrowRightGO.GetComponent<RectTransform>();
+        arrowRightRT.anchorMin = new Vector2(0.5f, 0.5f);
+        arrowRightRT.anchorMax = new Vector2(0.5f, 0.5f);
+        arrowRightRT.pivot = new Vector2(0.5f, 0.5f);
+        arrowRightRT.sizeDelta = new Vector2(140f, 140f);
+        arrowRightRT.anchoredPosition = new Vector2(300f, 0f);
+
+        // Mano apuntando a la carta
+        var handGO = CreateUIObject("HandPointer", gesturePanel.transform);
+        var handImg = handGO.AddComponent<Image>();
+        handImg.color = Color.white;
+        var handRT = handGO.GetComponent<RectTransform>();
+        handRT.anchorMin = new Vector2(0.5f, 0.5f);
+        handRT.anchorMax = new Vector2(0.5f, 0.5f);
+        handRT.pivot = new Vector2(0.5f, 0.5f);
+        handRT.sizeDelta = new Vector2(140f, 140f);
+        handRT.anchoredPosition = new Vector2(0f, -200f);
 
         // ── Conectar LoginManager ────────────────────────────────────────────
         var lmGO = GameObject.Find("LoginManager") ?? new GameObject("LoginManager");
@@ -183,14 +335,26 @@ public static class LoginCanvasCreator
         so.FindProperty("emailInput").objectReferenceValue        = emailInputGO.GetComponent<TMP_InputField>();
         so.FindProperty("privacyToggle").objectReferenceValue     = privacyToggle;
         so.FindProperty("privacyLabel").objectReferenceValue      = privacyLabelTMP;
+        so.FindProperty("gameRulesToggle").objectReferenceValue   = gameRulesToggle;
+        so.FindProperty("gameRulesLabel").objectReferenceValue    = gameRulesLabelTMP;
         so.FindProperty("registerButton").objectReferenceValue    = registerBtn;
         so.FindProperty("feedbackText").objectReferenceValue      = feedbackTMP;
         so.FindProperty("playerScoreText").objectReferenceValue    = playerScoreTMP;
+        so.FindProperty("playerBestText").objectReferenceValue    = playerBestTMP;
         so.FindProperty("leaderboardStatus").objectReferenceValue = lbStatusTMP;
         so.FindProperty("leaderboardLeft").objectReferenceValue   = lbLeftTMP;
         so.FindProperty("leaderboardRight").objectReferenceValue  = lbRightTMP;
         so.FindProperty("retryButton").objectReferenceValue       = retryBtn;
         so.ApplyModifiedProperties();
+
+        // ── Conectar TutorialManager ─────────────────────────────────────────
+        var tmGO = GameObject.Find("TutorialManager") ?? new GameObject("TutorialManager");
+        var tm = tmGO.GetComponent<TutorialManager>() ?? tmGO.AddComponent<TutorialManager>();
+
+        var soTM = new SerializedObject(tm);
+        soTM.FindProperty("tutorialPanel").objectReferenceValue = tutorialPanel;
+        soTM.FindProperty("gesturePanel").objectReferenceValue  = gesturePanel;
+        soTM.ApplyModifiedProperties();
 
         // Conectar botones y toggles
         UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
@@ -201,12 +365,18 @@ public static class LoginCanvasCreator
             privacyToggle.onValueChanged, lm.OnPrivacyToggleChanged, false);
         UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
             privacyLinkBtn.onClick, lm.OpenPrivacyLink);
+        UnityEditor.Events.UnityEventTools.AddBoolPersistentListener(
+            gameRulesToggle.onValueChanged, lm.OnGameRulesToggleChanged, false);
+        UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
+            gameRulesLinkBtn.onClick, lm.OpenGameRulesLink);
+        UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(
+            okBtn.onClick, tm.OnOkPressed);
 
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
             UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 
         Selection.activeGameObject = canvasGO;
-        Debug.Log("✓ LoginCanvas con panel de Login y Highscore creado. Guarda con Ctrl+S.");
+        Debug.Log("✓ LoginCanvas con Login, Highscore y Tutorial creado. Guarda con Ctrl+S.");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -333,10 +503,11 @@ public static class LoginCanvasCreator
         return go;
     }
 
-    private static (Toggle toggle, TextMeshProUGUI label, Button linkButton) CreatePrivacyRow(Transform parent, float yPos)
+    private static (Toggle toggle, TextMeshProUGUI label, Button linkButton) CreateCheckboxRow(
+        string rowName, Transform parent, string labelText, string linkText, float yPos)
     {
         // Contenedor de la fila
-        var rowGO = CreateUIObject("PrivacyRow", parent);
+        var rowGO = CreateUIObject(rowName, parent);
         var rowRT = rowGO.GetComponent<RectTransform>();
         rowRT.anchorMin = new Vector2(0.5f, 1f);
         rowRT.anchorMax = new Vector2(0.5f, 1f);
@@ -378,10 +549,10 @@ public static class LoginCanvasCreator
         toggle.graphic = checkImg;
         toggle.isOn = false;
 
-        // ── Texto "He leído y acepto la" ─────────────────────────────────────
+        // ── Texto label ──────────────────────────────────────────────────────
         var labelGO = CreateUIObject("Label", rowGO.transform);
         var labelTMP = labelGO.AddComponent<TextMeshProUGUI>();
-        labelTMP.text = "He leído y acepto la";
+        labelTMP.text = labelText;
         labelTMP.fontSize = 33;
         labelTMP.color = new Color(0.8f, 0.8f, 0.8f, 1f);
         labelTMP.alignment = TextAlignmentOptions.MidlineLeft;
@@ -392,7 +563,7 @@ public static class LoginCanvasCreator
         labelRT.sizeDelta = new Vector2(350f, 0f);
         labelRT.anchoredPosition = new Vector2(70f, 0f);
 
-        // ── Botón-link "política de privacidad" ──────────────────────────────
+        // ── Botón-link ───────────────────────────────────────────────────────
         var linkGO = CreateUIObject("PrivacyLink", rowGO.transform);
         var linkImg = linkGO.AddComponent<Image>();
         linkImg.color = Color.clear;
@@ -412,7 +583,7 @@ public static class LoginCanvasCreator
 
         var linkTxtGO = CreateUIObject("Text", linkGO.transform);
         var linkTMP = linkTxtGO.AddComponent<TextMeshProUGUI>();
-        linkTMP.text = "<u>política de privacidad</u>";
+        linkTMP.text = $"<u>{linkText}</u>";
         linkTMP.fontSize = 33;
         linkTMP.color = new Color(0.4f, 0.75f, 1f, 1f);
         linkTMP.alignment = TextAlignmentOptions.MidlineLeft;

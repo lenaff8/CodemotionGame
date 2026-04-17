@@ -24,10 +24,16 @@ public class UserResponse
 }
 
 [System.Serializable]
+public class UserResponseWrapper
+{
+    public List<UserResponse> entries;
+}
+
+[System.Serializable]
 public class LeaderboardEntry
 {
+    public string id;
     public string name;
-    public string email;
     public int points;
 }
 
@@ -44,6 +50,10 @@ public class LoginManager : MonoBehaviour
     private const string USERS_URL       = "https://softwareengineering-gzbrg3f6evdpb5ff.canadacentral-01.azurewebsites.net/api/users";
     private const string LEADERBOARD_URL = "https://softwareengineering-gzbrg3f6evdpb5ff.canadacentral-01.azurewebsites.net/api/leaderboard";
 
+    private const string PREFS_NAME  = "SavedPlayerName";
+    private const string PREFS_EMAIL = "SavedPlayerEmail";
+    private const string PREFS_ID    = "SavedPlayerId";
+
     [Header("Panels")]
     [SerializeField] private GameObject loginPanel;
     [SerializeField] private GameObject highscorePanel;
@@ -53,11 +63,14 @@ public class LoginManager : MonoBehaviour
     [SerializeField] private TMP_InputField emailInput;
     [SerializeField] private UnityEngine.UI.Toggle privacyToggle;
     [SerializeField] private TextMeshProUGUI privacyLabel;
+    [SerializeField] private UnityEngine.UI.Toggle gameRulesToggle;
+    [SerializeField] private TextMeshProUGUI gameRulesLabel;
     [SerializeField] private Button registerButton;
     [SerializeField] private TextMeshProUGUI feedbackText;
 
     [Header("Highscore")]
     [SerializeField] private TextMeshProUGUI playerScoreText;
+    [SerializeField] private TextMeshProUGUI playerBestText;
     [SerializeField] private TextMeshProUGUI leaderboardStatus;
     [SerializeField] private TextMeshProUGUI leaderboardLeft;
     [SerializeField] private TextMeshProUGUI leaderboardRight;
@@ -80,8 +93,16 @@ public class LoginManager : MonoBehaviour
 
         GameManager.Instance.onGameOver += OnGameOver;
 
-        if (!string.IsNullOrEmpty(PlayerName))
+        // Restaurar sesión guardada en el navegador (IndexedDB via PlayerPrefs)
+        string savedName  = PlayerPrefs.GetString(PREFS_NAME,  "");
+        string savedEmail = PlayerPrefs.GetString(PREFS_EMAIL, "");
+        string savedId    = PlayerPrefs.GetString(PREFS_ID,    "");
+
+        if (!string.IsNullOrEmpty(savedName) && !string.IsNullOrEmpty(savedEmail))
         {
+            PlayerName  = savedName;
+            PlayerEmail = savedEmail;
+            playerId    = savedId;
             loginPanel.SetActive(false);
             highscorePanel.SetActive(false);
             GameManager.IsPlaying = true;
@@ -113,6 +134,13 @@ public class LoginManager : MonoBehaviour
             return;
         }
 
+        if (!gameRulesToggle.isOn)
+        {
+            feedbackText.text = "Debes aceptar las bases del juego.";
+            gameRulesLabel.color = new Color(1f, 0.3f, 0.3f, 1f);
+            return;
+        }
+
         if (string.IsNullOrEmpty(name))
         {
             feedbackText.text = "Introduce tu nombre.";
@@ -126,12 +154,43 @@ public class LoginManager : MonoBehaviour
         }
 
         registerButton.interactable = false;
-        feedbackText.text = "Registrando...";
-        StartCoroutine(RegisterCoroutine(name, email));
+        feedbackText.text = "Verificando email...";
+        StartCoroutine(CheckAndRegisterCoroutine(name, email));
+    }
+
+    // Busca el email en el servidor antes de registrar para evitar duplicados
+    private IEnumerator CheckAndRegisterCoroutine(string name, string email)
+    {
+        string searchUrl = $"{USERS_URL}/search?email={UnityWebRequest.EscapeURL(email)}";
+
+        using (UnityWebRequest req = UnityWebRequest.Get(searchUrl))
+        {
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success)
+            {
+                UserResponse existing = ParseFirstUser(req.downloadHandler.text);
+                if (existing != null)
+                {
+                    Debug.Log($"Email ya existente: {email} — restaurando sesión (id: {existing.id})");
+                    feedbackText.text = $"Bienvenido de nuevo, {existing.name}!";
+                    yield return new WaitForSeconds(1.2f);
+                    RestoreSession(existing.name, email, existing.id, isNew: false);
+                    yield break;
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"No se pudo buscar email, procediendo con registro normal: {req.error}");
+            }
+        }
+
+        yield return StartCoroutine(RegisterCoroutine(name, email));
     }
 
     private IEnumerator RegisterCoroutine(string name, string email)
     {
+        feedbackText.text = "Registrando...";
         var body = new UserRequest { name = name, email = email, points = 0 };
         string json = JsonUtility.ToJson(body);
 
@@ -146,12 +205,8 @@ public class LoginManager : MonoBehaviour
             if (req.result == UnityWebRequest.Result.Success)
             {
                 var response = JsonUtility.FromJson<UserResponse>(req.downloadHandler.text);
-                PlayerName  = name;
-                PlayerEmail = email;
-                playerId    = response?.id;
-                Debug.Log($"Registrado: {name} ({email}) — id: {playerId}");
-                loginPanel.SetActive(false);
-                GameManager.IsPlaying = true;
+                Debug.Log($"Registrado: {name} ({email}) — id: {response?.id}");
+                RestoreSession(name, email, response?.id, isNew: true);
             }
             else
             {
@@ -160,6 +215,23 @@ public class LoginManager : MonoBehaviour
                 registerButton.interactable = true;
             }
         }
+    }
+
+    private void RestoreSession(string name, string email, string id, bool isNew)
+    {
+        PlayerName  = name;
+        PlayerEmail = email;
+        playerId    = id ?? "";
+        PlayerPrefs.SetString(PREFS_NAME,  name);
+        PlayerPrefs.SetString(PREFS_EMAIL, email);
+        PlayerPrefs.SetString(PREFS_ID,    playerId);
+        PlayerPrefs.Save();
+        loginPanel.SetActive(false);
+
+        if (isNew && TutorialManager.Instance != null)
+            TutorialManager.Instance.TryShowTutorial();
+        else
+            GameManager.IsPlaying = true;
     }
 
     // ── Game Over → Highscore ─────────────────────────────────────────────────
@@ -178,30 +250,56 @@ public class LoginManager : MonoBehaviour
 
     private IEnumerator SubmitAndFetch(int score)
     {
-        playerScoreText.text = $"Tu puntuación: {score} días";
-        leaderboardStatus.text = "Enviando puntuación...";
-        leaderboardLeft.text  = "";
-        leaderboardRight.text = "";
+        playerScoreText.text   = $"Tu puntuación: {score} días";
+        playerBestText.text    = "";
+        leaderboardStatus.text = "Comprobando puntuación...";
+        leaderboardLeft.text   = "";
+        leaderboardRight.text  = "";
 
-        yield return StartCoroutine(SubmitScoreCoroutine(score));
+        // Consultar la puntuación actual del jugador en el servidor
+        int serverBest = 0;
+        if (!string.IsNullOrEmpty(playerId))
+        {
+            using (UnityWebRequest req = UnityWebRequest.Get($"{USERS_URL}/{playerId}"))
+            {
+                yield return req.SendWebRequest();
 
-        leaderboardStatus.text = "Cargando ranking...";
+                if (req.result == UnityWebRequest.Result.Success)
+                {
+                    var user = JsonUtility.FromJson<UserResponse>(req.downloadHandler.text);
+                    serverBest = user?.points ?? 0;
+                }
+                else
+                {
+                    Debug.LogWarning($"No se pudo obtener puntuación actual: {req.error}");
+                }
+            }
+        }
+
+        if (score > serverBest)
+        {
+            playerScoreText.text   = $"Tu puntuación: {score} días";
+            playerBestText.text    = $"🏆 Nuevo récord personal!";
+            leaderboardStatus.text = "Enviando puntuación...";
+            yield return StartCoroutine(SubmitScoreCoroutine(score));
+            serverBest = score; // actualizar para mostrar el valor correcto
+        }
+        else
+        {
+            playerBestText.text    = $"Tu mejor puntuación: {serverBest} días";
+            leaderboardStatus.text = "Cargando ranking...";
+            Debug.Log($"Score {score} no supera el mejor en servidor ({serverBest}), no se actualiza.");
+        }
+
         yield return StartCoroutine(FetchLeaderboardCoroutine());
     }
 
     private IEnumerator SubmitScoreCoroutine(int score)
     {
-        if (string.IsNullOrEmpty(playerId))
-        {
-            Debug.LogWarning("Sin ID de usuario, no se puede enviar score.");
-            yield break;
-        }
-
         var body = new UserRequest { name = PlayerName, email = PlayerEmail, points = score };
         string json = JsonUtility.ToJson(body);
-        string url  = $"{USERS_URL}/{playerId}";
 
-        using (UnityWebRequest req = new UnityWebRequest(url, "PUT"))
+        using (UnityWebRequest req = new UnityWebRequest($"{USERS_URL}/{playerId}", "PUT"))
         {
             req.uploadHandler   = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(json));
             req.downloadHandler = new DownloadHandlerBuffer();
@@ -210,7 +308,7 @@ public class LoginManager : MonoBehaviour
             yield return req.SendWebRequest();
 
             if (req.result == UnityWebRequest.Result.Success)
-                Debug.Log($"Score enviado: {score} — {PlayerName}");
+                Debug.Log($"Nuevo mejor score enviado: {score} — {PlayerName}");
             else
                 Debug.LogError($"Error al enviar score: {req.error}\n{req.downloadHandler.text}");
         }
@@ -218,6 +316,8 @@ public class LoginManager : MonoBehaviour
 
     private IEnumerator FetchLeaderboardCoroutine()
     {
+        leaderboardStatus.text = "Cargando ranking...";
+
         using (UnityWebRequest req = UnityWebRequest.Get(LEADERBOARD_URL))
         {
             yield return req.SendWebRequest();
@@ -249,26 +349,11 @@ public class LoginManager : MonoBehaviour
         int top = Mathf.Min(10, entries.Count);
         for (int i = 0; i < top; i++)
         {
-            string medal = $"{i + 1}.";
-            sbLeft.AppendLine($"{medal}  {entries[i].points} días");
+            sbLeft.AppendLine($"{i + 1}.  {entries[i].points} días");
             sbRight.AppendLine(entries[i].name);
         }
         leaderboardLeft.text  = sbLeft.ToString().TrimEnd();
         leaderboardRight.text = sbRight.ToString().TrimEnd();
-    }
-
-    private List<LeaderboardEntry> ParseLeaderboard(string json)
-    {
-        try
-        {
-            string wrapped = "{\"entries\":" + json + "}";
-            var wrapper = JsonUtility.FromJson<LeaderboardWrapper>(wrapped);
-            if (wrapper?.entries != null && wrapper.entries.Count > 0)
-                return wrapper.entries;
-        }
-        catch { }
-
-        return null;
     }
 
     // ── Retry ─────────────────────────────────────────────────────────────────
@@ -290,12 +375,49 @@ public class LoginManager : MonoBehaviour
             privacyLabel.color = new Color(0.8f, 0.8f, 0.8f, 1f);
     }
 
+    public void OnGameRulesToggleChanged(bool isOn)
+    {
+        if (isOn)
+            gameRulesLabel.color = new Color(0.8f, 0.8f, 0.8f, 1f);
+    }
+
     public void OpenPrivacyLink()
     {
         Application.OpenURL("https://www.betterask.erni/es-es/privacy-statement/");
     }
 
+    public void OpenGameRulesLink()
+    {
+        Application.OpenURL("https://erni-raffle.vercel.app/");
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private UserResponse ParseFirstUser(string json)
+    {
+        try
+        {
+            string wrapped = "{\"entries\":" + json + "}";
+            var wrapper = JsonUtility.FromJson<UserResponseWrapper>(wrapped);
+            if (wrapper?.entries != null && wrapper.entries.Count > 0)
+                return wrapper.entries[0];
+        }
+        catch { }
+        return null;
+    }
+
+    private List<LeaderboardEntry> ParseLeaderboard(string json)
+    {
+        try
+        {
+            string wrapped = "{\"entries\":" + json + "}";
+            var wrapper = JsonUtility.FromJson<LeaderboardWrapper>(wrapped);
+            if (wrapper?.entries != null && wrapper.entries.Count > 0)
+                return wrapper.entries;
+        }
+        catch { }
+        return null;
+    }
 
     private bool IsValidEmail(string email)
     {
