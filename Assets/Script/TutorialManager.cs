@@ -9,6 +9,7 @@ public class TutorialManager : MonoBehaviour
 
     [Header("Panels")]
     [SerializeField] private GameObject tutorialPanel;
+    [SerializeField] private GameObject tutorialButton;
     [SerializeField] private GameObject gesturePanel;
 
     void Awake()
@@ -17,19 +18,34 @@ public class TutorialManager : MonoBehaviour
         Instance = this;
 
         tutorialPanel.SetActive(false);
+        tutorialButton.SetActive(false);
         gesturePanel.SetActive(false);
+        if (PlayerPrefs.GetInt(TUTORIAL_SHOWN_KEY, 0) != 0)
+        {
+            tutorialButton.SetActive(true);
+        }   
     }
 
     public void TryShowTutorial()
     {
         if (PlayerPrefs.GetInt(TUTORIAL_SHOWN_KEY, 0) == 0)
         {
-            tutorialPanel.SetActive(true);
+            ShowTutorial();
         }
         else
         {
+            tutorialButton.SetActive(true);
             GameManager.IsPlaying = true;
         }
+    }
+    
+    public void ShowTutorial()
+    {
+        
+        Debug.Log("Show Tutorial");
+        tutorialPanel.SetActive(true);
+        gesturePanel.SetActive(false);
+        tutorialButton.SetActive(false);
     }
 
 
@@ -37,7 +53,11 @@ public class TutorialManager : MonoBehaviour
     public void OnOkPressed()
     {
         tutorialPanel.SetActive(false);
-        gesturePanel.SetActive(true);
+        tutorialButton.SetActive(true);
+        if (PlayerPrefs.GetInt(TUTORIAL_SHOWN_KEY, 0) == 0)
+        {
+            gesturePanel.SetActive(true);
+        }
 
         PlayerPrefs.SetInt(TUTORIAL_SHOWN_KEY, 1);
         PlayerPrefs.Save();

@@ -57,6 +57,7 @@ public class LoginManager : MonoBehaviour
     [Header("Panels")]
     [SerializeField] private GameObject loginPanel;
     [SerializeField] private GameObject highscorePanel;
+    [SerializeField] private GameObject tutorialButton;
 
     [Header("Login - Campos")]
     [SerializeField] private TMP_InputField nameInput;
@@ -104,6 +105,7 @@ public class LoginManager : MonoBehaviour
             PlayerEmail = savedEmail;
             playerId    = savedId;
             loginPanel.SetActive(false);
+            tutorialButton.SetActive(true);
             highscorePanel.SetActive(false);
             GameManager.IsPlaying = true;
             yield break;
@@ -231,7 +233,11 @@ public class LoginManager : MonoBehaviour
         if (isNew && TutorialManager.Instance != null)
             TutorialManager.Instance.TryShowTutorial();
         else
+        {
+            Debug.Log("???");
+            tutorialButton.SetActive(true);
             GameManager.IsPlaying = true;
+        }
     }
 
     // ── Game Over → Highscore ─────────────────────────────────────────────────
@@ -241,6 +247,7 @@ public class LoginManager : MonoBehaviour
         int finalScore = GameManager.Instance != null ? GameManager.Instance.Rounds : 0;
         highscorePanel.SetActive(true);
         loginPanel.SetActive(false);
+        tutorialButton.SetActive(false);
 
         var cardScenario = Object.FindFirstObjectByType<CardScenario>();
         cardScenario?.ClearTexts();
@@ -361,6 +368,7 @@ public class LoginManager : MonoBehaviour
     public void OnRetryPressed()
     {
         highscorePanel.SetActive(false);
+        tutorialButton.SetActive(true);
 
         var gameOverScreen = Object.FindFirstObjectByType<GameOverScreen>();
         gameOverScreen?.Hide();

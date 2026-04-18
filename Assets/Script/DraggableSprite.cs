@@ -14,9 +14,14 @@ public class DraggableSprite : MonoBehaviour
     [Header("Speeds")]
     public float dragSmoothSpeed = 12f;
     public float returnSpeed = 8f;
-    public float snapSpeed = 14f;
+    public float snapSpeed = 2f;
     public float positionFollowSpeed = 10f;
+    [Header("Snap Curve")]
+    [SerializeField] private AnimationCurve snapCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
+    private float snapProgress = 0f;
+    private float snapStartAngle;
+    
     [Header("Threshold")]
     public float returnThreshold = 20f;
 
@@ -100,6 +105,7 @@ public class DraggableSprite : MonoBehaviour
 
     private bool previousPassedThreshold = false;
     private bool previousIsRight = false;
+    [SerializeField] private GameObject tutorialPanel;
 
     private void Awake()
     {
@@ -243,7 +249,7 @@ public class DraggableSprite : MonoBehaviour
         if (!interactable)
             return;
 
-        if (input.ClickPressed)
+        if (input.ClickPressed && !tutorialPanel.activeSelf)
         {
             Vector2 worldPos = ScreenToWorld(input.PointerPosition);
             Collider2D hit = Physics2D.OverlapPoint(worldPos);
@@ -271,8 +277,8 @@ public class DraggableSprite : MonoBehaviour
             {
                 //añadido sonido
                 SoundManager.instance.PlaySwipe();
-                float leftAngle = -25f;
-                float rightAngle = 25f;
+                float leftAngle = -60f;
+                float rightAngle = 60f;
 
                 float distLeft = Mathf.Abs(Mathf.DeltaAngle(currentAngle, leftAngle));
                 float distRight = Mathf.Abs(Mathf.DeltaAngle(currentAngle, rightAngle));
@@ -281,6 +287,8 @@ public class DraggableSprite : MonoBehaviour
 
                 state = State.Snapping;
                 interactable = false;
+                snapStartAngle = currentAngle;
+                snapProgress = 0f;
 
                 if (gameOverStep != 2)
                     GameManager.Instance.ApplyScenarioEffects(currentAngle > 0);
@@ -346,7 +354,8 @@ public class DraggableSprite : MonoBehaviour
                 CharacterEffect effect = isRight ? scenario.effects.right : scenario.effects.left;
 
                 DeactivateAllIndicators();
-                ActivateStatIndicators(effect);
+                if(gameOverStep == 0)
+                    ActivateStatIndicators(effect);
             }
         }
     }
@@ -399,15 +408,16 @@ public class DraggableSprite : MonoBehaviour
 
     private void HandleSnap()
     {
-        currentAngle = Mathf.LerpAngle(
-            currentAngle,
-            startAngle,
-            1f - Mathf.Exp(-snapSpeed * Time.deltaTime)
-        );
+        snapProgress += Time.deltaTime * snapSpeed;
+        snapProgress = Mathf.Clamp01(snapProgress);
+
+        float t = snapCurve.Evaluate(snapProgress);
+
+        currentAngle = Mathf.LerpAngle(snapStartAngle, startAngle, t);
 
         ApplyTransform(snapSpeed);
 
-        if (Mathf.Abs(Mathf.DeltaAngle(currentAngle, startAngle)) < 0.1f)
+        if (snapProgress >= 1f)
         {
             currentAngle = startAngle;
             state = State.SnapWaiting;

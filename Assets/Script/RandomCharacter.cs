@@ -34,6 +34,12 @@ public class RandomCharacter : MonoBehaviour
     [SerializeField] private List<Sprite> rankSprites = new List<Sprite>();
     [SerializeField] private List<Sprite> symbolSprites = new List<Sprite>();
 
+    private ReplaceColorController bodyColor;
+    private ReplaceColorController eyesColor;
+    private ReplaceColorController hairColor;
+    private ReplaceColorController headColor;
+    private ReplaceColorController mouthColor;
+    
     private int originalBodyOrder;
     private int originalEyesOrder;
     private int originalHairOrder;
@@ -54,6 +60,11 @@ public class RandomCharacter : MonoBehaviour
 
     private void Start()
     {
+        bodyColor = body.GetComponent<ReplaceColorController>();
+        eyesColor = eyes.GetComponent<ReplaceColorController>();
+        hairColor = hair.GetComponent<ReplaceColorController>();
+        headColor = head.GetComponent<ReplaceColorController>();
+        mouthColor = mouth.GetComponent<ReplaceColorController>();
         SaveOriginalSortingOrder();
     }
 
@@ -94,9 +105,11 @@ public class RandomCharacter : MonoBehaviour
         // Asignar palo aleatorio
         if (symbolSprites.Count > 0)
         {
-            Sprite randomSymbol = symbolSprites[Random.Range(0, symbolSprites.Count)];
+            int symbolIndex = Random.Range(0, symbolSprites.Count);
+            Sprite randomSymbol = symbolSprites[symbolIndex];
             suitSymbol.sprite = randomSymbol;
             suitSymbol2.sprite = randomSymbol;
+            ApplySuitColor(symbolIndex);
         }
 
         // Asignar n?mero basado en el rol
@@ -234,5 +247,25 @@ public class RandomCharacter : MonoBehaviour
         jokerCardGroup.SetActive(false);
         gameOverCard.SetActive(true);
         SetSortingOrderToBack();
+    }
+    
+    private void ApplySuitColor(int symbolIndex)
+    {
+        Color targetColor;
+
+        if (symbolIndex == 0 || symbolIndex == 1)
+        {
+            ColorUtility.TryParseHtmlString("#CF1716", out targetColor);
+        }
+        else
+        {
+            ColorUtility.TryParseHtmlString("#000000", out targetColor);
+        }
+
+        bodyColor.SetReplaceColor(targetColor);
+        eyesColor.SetReplaceColor(targetColor);
+        hairColor.SetReplaceColor(targetColor);
+        headColor.SetReplaceColor(targetColor);
+        mouthColor.SetReplaceColor(targetColor);
     }
 }

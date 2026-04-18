@@ -2,6 +2,8 @@ using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEngine.Networking;
 
 [System.Serializable]
@@ -18,6 +20,9 @@ public class ScenarioEffects
 {
     public CharacterEffect left;
     public CharacterEffect right;
+    public string ciphertext;
+    public string iv;
+    public string salt;
 }
 
 [System.Serializable]
@@ -64,6 +69,9 @@ public class AIScenarioGenerator : MonoBehaviour
 {
     private const string API_URL = "https://softwareengineering-gzbrg3f6evdpb5ff.canadacentral-01.azurewebsites.net/api/ai/chat";
     private const int MAX_HISTORY_SIZE = 10;
+    private const string SHARED_SECRET = "Ks3a+4Ld";
+    private const int PBKDF2_ITERATIONS = 100000;
+    private const int KEY_SIZE_BYTES = 32;
 
     private List<AIScenario> scenarioHistory = new List<AIScenario>();
     private bool isGenerating = false;
@@ -147,6 +155,13 @@ public class AIScenarioGenerator : MonoBehaviour
 
                     AIScenario data = JsonUtility.FromJson<AIScenario>(responseText);
 
+                    List<string> decryptionErrors = TryDecryptEffectsIfNeeded(data);
+                    if (decryptionErrors.Count > 0)
+                    {
+                        onAIGenerationError?.Invoke(decryptionErrors);
+                        yield break;
+                    }
+
                     // Validar
                     List<string> errors = ValidateResponse(data);
 
@@ -182,7 +197,6 @@ public class AIScenarioGenerator : MonoBehaviour
         if (data == null)
         {
             errors.Add("Respuesta JSON nula");
-
             return errors;
         }
 
@@ -205,6 +219,78 @@ public class AIScenarioGenerator : MonoBehaviour
                 errors.Add("Faltan efectos para left");
             if (data.effects.right == null)
                 errors.Add("Faltan efectos para right");
+        }
+
+        return errors;
+    }
+
+    private List<string> TryDecryptEffectsIfNeeded(AIScenario data)
+    {
+        List<string> errors = new List<string>();
+
+        if (data == null)
+        {
+            return errors;
+        }
+
+        if (data.effects == null)
+        {
+            errors.Add("Falta effects");
+            return errors;
+        }
+
+        if (data.effects.left != null || data.effects.right != null)
+        {
+            errors.Add("No se permite effects en claro. Debe venir effects encriptado");
+            return errors;
+        }
+
+        if (string.IsNullOrEmpty(data.situation))
+        {
+            errors.Add("No se puede derivar clave sin situation");
+            return errors;
+        }
+
+        if (string.IsNullOrEmpty(data.effects.ciphertext) ||
+            string.IsNullOrEmpty(data.effects.iv) ||
+            string.IsNullOrEmpty(data.effects.salt))
+        {
+            errors.Add("effects incompleto (ciphertext/iv/salt)");
+            return errors;
+        }
+
+        try
+        {
+            byte[] cipherBytes = Convert.FromBase64String(data.effects.ciphertext);
+            byte[] ivBytes = Convert.FromBase64String(data.effects.iv);
+            byte[] saltBytes = Convert.FromBase64String(data.effects.salt);
+
+            string keyMaterial = $"{data.situation}|{SHARED_SECRET}";
+            using var kdf = new Rfc2898DeriveBytes(keyMaterial, saltBytes, PBKDF2_ITERATIONS, HashAlgorithmName.SHA256);
+            byte[] key = kdf.GetBytes(KEY_SIZE_BYTES);
+
+            using Aes aes = Aes.Create();
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+            aes.Key = key;
+            aes.IV = ivBytes;
+
+            using ICryptoTransform decryptor = aes.CreateDecryptor();
+            byte[] plainBytes = decryptor.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
+            string effectsJson = Encoding.UTF8.GetString(plainBytes);
+
+            ScenarioEffects decryptedEffects = JsonUtility.FromJson<ScenarioEffects>(effectsJson);
+            if (decryptedEffects == null)
+            {
+                errors.Add("No se pudieron parsear los effects desencriptados");
+                return errors;
+            }
+
+            data.effects = decryptedEffects;
+        }
+        catch (Exception ex)
+        {
+            errors.Add($"Error desencriptando effects: {ex.Message}");
         }
 
         return errors;

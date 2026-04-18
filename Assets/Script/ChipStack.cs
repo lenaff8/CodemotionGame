@@ -14,17 +14,12 @@ public class ChipStack : MonoBehaviour
     [SerializeField] private List<GameObject> moneyChips = new List<GameObject>();
 
     [Header("Vibration Settings")]
-    [SerializeField] private float vibrationAmount = 0.015f; // Amplitud de la vibración en píxeles
-    [SerializeField] private float vibrationSpeed = 0.05f; // Velocidad de la vibración
+    [SerializeField] private float vibrationAmount = 0.015f;
+    [SerializeField] private float vibrationSpeed = 0.05f;
 
-    private Vector3 originalEnergyPos;
-    private Vector3 originalPeoplePos;
-    private Vector3 originalReputationPos;
-    private Vector3 originalMoneyPos;
-
+    private List<GameObject> vibratingGroups = new List<GameObject>();
+    private Dictionary<GameObject, Vector3> originalPositions = new Dictionary<GameObject, Vector3>();
     private float vibrationTimer = 0f;
-    private bool isVibrating = false;
-    private GameObject currentVibrationTarget;
 
     public void SetScores(int energy, int people, int reputation, int money)
     {
@@ -42,69 +37,65 @@ public class ChipStack : MonoBehaviour
             chips[i].SetActive(i < score);
         }
 
-        // Activar vibración si la puntuación es exactamente 8
-        if (score >= 8 && chipGroupTransform != null)
+        if (chipGroupTransform == null)
+            return;
+
+        // Activar vibración si la puntuación es >= 8
+        if (score >= 8)
         {
-            StartVibration(chipGroupTransform.gameObject);
+            AddGroupToVibration(chipGroupTransform.gameObject);
         }
-        else if (score < 8 && currentVibrationTarget == chipGroupTransform.gameObject)
+        else
         {
-            // Detener vibración si la puntuación deja de ser 8
-            StopVibration(chipGroupTransform);
+            // Detener vibración si la puntuación baja de 8
+            RemoveGroupFromVibration(chipGroupTransform.gameObject);
         }
     }
 
-    private void StartVibration(GameObject target)
+    private void AddGroupToVibration(GameObject target)
     {
-        if (currentVibrationTarget != target)
+        // Verificar si ya está en vibración
+        if (vibratingGroups.Contains(target))
+            return;
+
+        // Guardar posición original si no la tenemos
+        if (!originalPositions.ContainsKey(target))
         {
-            // Detener vibración anterior si existe
-            if (currentVibrationTarget != null)
+            originalPositions[target] = target.transform.localPosition;
+        }
+
+        vibratingGroups.Add(target);
+    }
+
+    private void RemoveGroupFromVibration(GameObject target)
+    {
+        if (vibratingGroups.Remove(target))
+        {
+            // Restaurar posición original
+            if (originalPositions.ContainsKey(target))
             {
-                StopVibration(currentVibrationTarget.transform);
+                target.transform.localPosition = originalPositions[target];
             }
-
-            currentVibrationTarget = target;
-            isVibrating = true;
-            vibrationTimer = 0f;
         }
-    }
-
-    private void StopVibration(Transform target)
-    {
-        if (target != null)
-        {
-            target.localPosition = GetOriginalPosition(target.gameObject);
-        }
-        isVibrating = false;
-        currentVibrationTarget = null;
     }
 
     private void Update()
     {
-        if (isVibrating && currentVibrationTarget != null)
+        if (vibratingGroups.Count > 0)
         {
             vibrationTimer += Time.deltaTime;
 
-            // Aplicar vibración horizontal en loop infinito
+            // Aplicar vibración a todos los grupos
             float vibrationOffset = Mathf.Sin(vibrationTimer / vibrationSpeed * Mathf.PI) * vibrationAmount;
-            Vector3 originalPos = GetOriginalPosition(currentVibrationTarget);
-            currentVibrationTarget.transform.localPosition = originalPos + Vector3.right * vibrationOffset;
+
+            foreach (GameObject group in vibratingGroups)
+            {
+                if (group != null && originalPositions.ContainsKey(group))
+                {
+                    group.transform.localPosition = originalPositions[group] + Vector3.right * vibrationOffset;
+                }
+            }
         }
-    }
-
-    private Vector3 GetOriginalPosition(GameObject target)
-    {
-        if (GetEnergyTransform() != null && GetEnergyTransform().gameObject == target)
-            return originalEnergyPos;
-        if (GetPeopleTransform() != null && GetPeopleTransform().gameObject == target)
-            return originalPeoplePos;
-        if (GetReputationTransform() != null && GetReputationTransform().gameObject == target)
-            return originalReputationPos;
-        if (GetMoneyTransform() != null && GetMoneyTransform().gameObject == target)
-            return originalMoneyPos;
-
-        return target.transform.localPosition;
     }
 
     private Transform GetEnergyTransform()
@@ -129,16 +120,6 @@ public class ChipStack : MonoBehaviour
 
     private void Awake()
     {
-        // Guardar posiciones originales
-        if (GetEnergyTransform() != null)
-            originalEnergyPos = GetEnergyTransform().localPosition;
-        if (GetPeopleTransform() != null)
-            originalPeoplePos = GetPeopleTransform().localPosition;
-        if (GetReputationTransform() != null)
-            originalReputationPos = GetReputationTransform().localPosition;
-        if (GetMoneyTransform() != null)
-            originalMoneyPos = GetMoneyTransform().localPosition;
-
         SetScores(5, 5, 5, 5);
     }
 }
