@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEngine.Networking;
+using System.Threading.Tasks; // 🔥 AÑADIDO
 
 [System.Serializable]
 public class CharacterEffect
@@ -115,12 +116,13 @@ public class AIScenarioGenerator : MonoBehaviour
     private IEnumerator GenerateScenarioCoroutine(int numScenarios)
     {
         isGenerating = true;
+
         while (numScenarios > 0)
         {
             --numScenarios;
-            // Preparar el input con clases serializables
+
             List<RecentCard> cleanHistory = CleanHistoryForInput(scenarioHistory);
-            
+
             var inputData = new AIGenerationRequest
             {
                 prompt = "start",
@@ -130,10 +132,9 @@ public class AIScenarioGenerator : MonoBehaviour
 
             string jsonInput = JsonUtility.ToJson(inputData);
 
-            // Hacer la request
             using (UnityWebRequest request = new UnityWebRequest(API_URL, "POST"))
             {
-                byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonInput);
+                byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonInput);
                 request.uploadHandler = new UploadHandlerRaw(bodyRaw);
                 request.downloadHandler = new DownloadHandlerBuffer();
                 request.SetRequestHeader("Content-Type", "application/json");
@@ -148,21 +149,26 @@ public class AIScenarioGenerator : MonoBehaviour
                     yield break;
                 }
 
+                string responseText = request.downloadHandler.text;
+                Debug.Log($"Response: {responseText}");
+
+                AIScenario data = JsonUtility.FromJson<AIScenario>(responseText);
+
+// 🔥 Espera fuera del try/catch
+                var decryptTask = TryDecryptEffectsIfNeededAsync(data);
+                while (!decryptTask.IsCompleted)
+                    yield return null;
+
                 try
                 {
-                    string responseText = request.downloadHandler.text;
-                    Debug.Log($"Response: {responseText}");
+                    List<string> decryptionErrors = decryptTask.Result;
 
-                    AIScenario data = JsonUtility.FromJson<AIScenario>(responseText);
-
-                    List<string> decryptionErrors = TryDecryptEffectsIfNeeded(data);
                     if (decryptionErrors.Count > 0)
                     {
                         onAIGenerationError?.Invoke(decryptionErrors);
                         yield break;
                     }
 
-                    // Validar
                     List<string> errors = ValidateResponse(data);
 
                     if (errors.Count > 0)
@@ -172,7 +178,6 @@ public class AIScenarioGenerator : MonoBehaviour
                         yield break;
                     }
 
-                    // Guardar en historial
                     scenarioHistory.Add(data);
                     if (scenarioHistory.Count > MAX_HISTORY_SIZE)
                     {
@@ -190,6 +195,12 @@ public class AIScenarioGenerator : MonoBehaviour
         }
     }
 
+    // 🔥 NUEVO: async wrapper
+    async Task<List<string>> TryDecryptEffectsIfNeededAsync(AIScenario data)
+    {
+        return await Task.Run(() => TryDecryptEffectsIfNeeded(data));
+    }
+
     private List<string> ValidateResponse(AIScenario data)
     {
         List<string> errors = new List<string>();
@@ -200,7 +211,6 @@ public class AIScenarioGenerator : MonoBehaviour
             return errors;
         }
 
-        // Campos básicos - más flexible
         if (string.IsNullOrEmpty(data.situation))
             errors.Add("Falta campo: situation");
         if (string.IsNullOrEmpty(data.left_option))
@@ -208,7 +218,6 @@ public class AIScenarioGenerator : MonoBehaviour
         if (string.IsNullOrEmpty(data.right_option))
             errors.Add("Falta campo: right_option");
 
-        // Efectos - obligatorio
         if (data.effects == null)
         {
             errors.Add("Faltan effects");
@@ -228,10 +237,7 @@ public class AIScenarioGenerator : MonoBehaviour
     {
         List<string> errors = new List<string>();
 
-        if (data == null)
-        {
-            return errors;
-        }
+        if (data == null) return errors;
 
         if (data.effects == null)
         {
@@ -239,7 +245,12 @@ public class AIScenarioGenerator : MonoBehaviour
             return errors;
         }
 
-        if (data.effects.left != null || data.effects.right != null)
+        bool hasEncryptedPayload =
+            !string.IsNullOrEmpty(data.effects.ciphertext) &&
+            !string.IsNullOrEmpty(data.effects.iv) &&
+            !string.IsNullOrEmpty(data.effects.salt);
+
+        if (!hasEncryptedPayload && (data.effects.left != null || data.effects.right != null))
         {
             errors.Add("No se permite effects en claro. Debe venir effects encriptado");
             return errors;
@@ -251,9 +262,7 @@ public class AIScenarioGenerator : MonoBehaviour
             return errors;
         }
 
-        if (string.IsNullOrEmpty(data.effects.ciphertext) ||
-            string.IsNullOrEmpty(data.effects.iv) ||
-            string.IsNullOrEmpty(data.effects.salt))
+        if (!hasEncryptedPayload)
         {
             errors.Add("effects incompleto (ciphertext/iv/salt)");
             return errors;
@@ -266,7 +275,9 @@ public class AIScenarioGenerator : MonoBehaviour
             byte[] saltBytes = Convert.FromBase64String(data.effects.salt);
 
             string keyMaterial = $"{data.situation}|{SHARED_SECRET}";
-            using var kdf = new Rfc2898DeriveBytes(keyMaterial, saltBytes, PBKDF2_ITERATIONS, HashAlgorithmName.SHA256);
+            byte[] keyMaterialBytes = Encoding.UTF8.GetBytes(keyMaterial);
+
+            using var kdf = new Rfc2898DeriveBytes(keyMaterialBytes, saltBytes, PBKDF2_ITERATIONS, HashAlgorithmName.SHA256);
             byte[] key = kdf.GetBytes(KEY_SIZE_BYTES);
 
             using Aes aes = Aes.Create();
@@ -280,9 +291,10 @@ public class AIScenarioGenerator : MonoBehaviour
             string effectsJson = Encoding.UTF8.GetString(plainBytes);
 
             ScenarioEffects decryptedEffects = JsonUtility.FromJson<ScenarioEffects>(effectsJson);
-            if (decryptedEffects == null)
+
+            if (decryptedEffects == null || decryptedEffects.left == null || decryptedEffects.right == null)
             {
-                errors.Add("No se pudieron parsear los effects desencriptados");
+                errors.Add("Effects desencriptados inválidos");
                 return errors;
             }
 
@@ -304,19 +316,16 @@ public class AIScenarioGenerator : MonoBehaviour
         for (int i = startIndex; i < history.Count; i++)
         {
             var scenario = history[i];
-            var cleanedScenario = new RecentCard
+            cleanedHistory.Add(new RecentCard
             {
                 name = scenario.name,
                 role = scenario.role,
                 type = scenario.type,
                 gender = scenario.gender,
                 theme = scenario.theme
-                // NO incluir "situation"
-            };
-            cleanedHistory.Add(cleanedScenario);
+            });
         }
 
         return cleanedHistory;
     }
 }
-
