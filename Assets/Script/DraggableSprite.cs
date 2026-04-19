@@ -427,6 +427,7 @@ public class DraggableSprite : MonoBehaviour
 
     private void HandleSnapWaiting()
     {
+        randomCharacter.SetSortingOrderToBack();
         snapTimer += Time.deltaTime;
 
         if (snapTimer >= snapReturnDelay)
@@ -461,7 +462,6 @@ public class DraggableSprite : MonoBehaviour
                 cardScenario.UpdateNextScenarioTexts();
                 // Generar nuevo personaje para la siguiente carta
                 randomCharacter.RandomizeCharacter(ScenarioManager.Instance.CurrentScenario.role, ScenarioManager.Instance.CurrentScenario.type);
-                randomCharacter.SetSortingOrderToBack();
             }
         }
     }
